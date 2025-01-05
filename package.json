@@ -1,0 +1,25 @@
+{
+  "name": "blackjacknowapp",
+  "version": "1.0.0",
+  "description": "Main App",
+  "homepage": "https://github.com/FrankPizz10/BlackJack#readme",
+  "bugs": {
+    "url": "https://github.com/FrankPizz10/BlackJack/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FrankPizz10/BlackJack.git"
+  },
+  "license": "ISC",
+  "author": "Frank Pizzella",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
+    "start:frontend": "cd Frontend/BlackJackNow && npm run dev",  
+    "start:backend": "cd Backend/BlackJackNow && npm run start:nodemon"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
