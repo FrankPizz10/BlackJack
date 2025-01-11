@@ -15,10 +15,12 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start": "npm run build:shared-types && concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "build:shared-types": "cd Packages/shared-types && npm run build",
     "start:frontend": "cd Frontend/BlackJackNow && npm run dev",
     "start:backend": "cd Backend/BlackJackNow && npm run start:nodemon",
-    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint": "npm run lint:shared-types && npm run lint:frontend && npm run lint:backend",
+    "lint:shared-types": "cd Packages/shared-types && npm run lint",
     "lint:frontend": "cd Frontend/BlackJackNow && npm run lint",
     "lint:backend": "cd Backend/BlackJackNow && npm run lint"
   },
