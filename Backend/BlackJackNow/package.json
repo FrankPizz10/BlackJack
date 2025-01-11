@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "build": "npx tsc",
+    "ci": "npm install && npm run build && npm run lint",
     "start": "ts-node ./src/app.ts",
     "start:nodemon": "./node_modules/nodemon/bin/nodemon.js",
     "lint": "eslint . --fix"
