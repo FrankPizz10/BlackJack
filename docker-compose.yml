@@ -1,0 +1,12 @@
+services:
+  backend:
+    image: blackjacknow-backend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - '3000:3000'
+    environment:
+      PORT: 3000
+    command: ['npm', 'run', 'dockercmd']
+

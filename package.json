@@ -26,7 +26,9 @@
     "ci": "npm run ci:shared-types && npm run ci:frontend && npm run ci:backend",
     "ci:shared-types": "cd Packages/shared-types && npm run ci",
     "ci:frontend": "cd Frontend/BlackJackNow && npm run ci",
-    "ci:backend": "cd Backend/BlackJackNow && npm run ci"
+    "ci:backend": "cd Backend/BlackJackNow && npm run ci",
+    "start:docker": "docker compose up --build -d",
+    "stop:docker": "docker compose stop"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
