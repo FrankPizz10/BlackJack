@@ -22,7 +22,11 @@
     "lint": "npm run lint:shared-types && npm run lint:frontend && npm run lint:backend",
     "lint:shared-types": "cd Packages/shared-types && npm run lint",
     "lint:frontend": "cd Frontend/BlackJackNow && npm run lint",
-    "lint:backend": "cd Backend/BlackJackNow && npm run lint"
+    "lint:backend": "cd Backend/BlackJackNow && npm run lint",
+    "ci": "npm run ci:shared-types && npm run ci:frontend && npm run ci:backend",
+    "ci:shared-types": "cd Packages/shared-types && npm run ci",
+    "ci:frontend": "cd Frontend/BlackJackNow && npm run ci",
+    "ci:backend": "cd Backend/BlackJackNow && npm run ci"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
