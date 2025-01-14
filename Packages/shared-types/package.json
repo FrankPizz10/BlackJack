@@ -15,7 +15,8 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "build": "npx tsc",
+    "build": "tsc",
+    "buildInstall": "npm install && npm run build",
     "ci": "npm install && npm run build && npm run lint",
     "lint": "eslint . --fix"
   },

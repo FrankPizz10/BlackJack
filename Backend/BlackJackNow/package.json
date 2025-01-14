@@ -6,7 +6,8 @@
     "build": "tsc",
     "ci": "npm install && npm run build && npm run lint",
     "start": "ts-node ./src/app.ts",
-    "prepare:docker": "npm install && npm run build",
+    "buildInstall": "npm install && npm run build",
+    "prepare:docker": "npm run buildInstall && cd ../../Packages/shared-types && npm run buildInstall",
     "dockercmd": "node ./dist/src/app.js",
     "start:nodemon": "nodemon",
     "lint": "eslint . --fix"

@@ -2,14 +2,17 @@
 FROM node:23-alpine
 
 # The /app directory should act as the main application directory
-WORKDIR /app/Backend/BlackJackNow
+WORKDIR /app/Frontend/BlackJackNow
 
 # Copy the app package and package-lock.json file
-COPY ./Backend/BlackJackNow/package*.json ./
-COPY ./Backend/BlackJackNow/tsconfig.json ./
+COPY ./Frontend/BlackJackNow/package*.json ./
+COPY ./Frontend/BlackJackNow/tsconfig*.json ./
+COPY ./Frontend/BlackJackNow/vite.config.ts ./
+COPY ./Frontend/BlackJackNow/index.html ./
 
 # Copy local directories to the current local directory of our docker image (/app)
-COPY ./Backend/BlackJackNow/src ./src
+COPY ./Frontend/BlackJackNow/src ./src
+COPY ./Frontend/BlackJackNow/public ./public
 
 # Copy shared types
 COPY ./Packages/shared-types/src ../../Packages/shared-types/src
@@ -19,7 +22,7 @@ COPY ./Packages/shared-types/tsconfig.json ../../Packages/shared-types/
 # Install node packages, install serve, build the app, and remove dependencies at the end
 RUN npm run prepare:docker
 
-EXPOSE 4000
+EXPOSE 3000
 
 # Start the app
-CMD [ "npm", "run", "dockercmd" ]
+CMD [ "serve", "-s", "dist" ]

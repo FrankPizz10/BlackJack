@@ -5,8 +5,16 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     ports:
-      - '3000:3000'
+      - '4000:4000'
     environment:
-      PORT: 3000
+      PORT: 4000
     command: ['npm', 'run', 'dockercmd']
+  frontend:
+    image: blackjacknow-frontend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - '3000:3000'
+    command: ['serve', '-s', 'dist']
 
