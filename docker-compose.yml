@@ -6,8 +6,13 @@ services:
       dockerfile: Dockerfile.backend
     ports:
       - '4000:4000'
+    depends_on:
+      - postgres
+      - redis
     environment:
       PORT: 4000
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
     command: ['npm', 'run', 'dockercmd']
   frontend:
     image: blackjacknow-frontend:latest
@@ -17,4 +22,28 @@ services:
     ports:
       - '3000:3000'
     command: ['serve', '-s', 'dist']
+  redis:
+    image: redis/redis-stack:6.2.6-v18
+    container_name: redis-stack
+    ports:
+      - '6379:6379' # Redis port
+      - '8001:8001' # Redis Stack UI port
+    volumes:
+      - redis_data:/data
+
+  postgres:
+    image: postgres:14.15-alpine3.21
+    container_name: postgres
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  redis_data:
+  postgres_data:
 
