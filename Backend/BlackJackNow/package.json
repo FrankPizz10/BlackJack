@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "npx tsc",
+    "build": "tsc",
     "ci": "npm install && npm run build && npm run lint",
     "start": "ts-node ./src/app.ts",
-    "start:nodemon": "./node_modules/nodemon/bin/nodemon.js",
+    "buildInstall": "npm install && npm run build",
+    "prepare:docker": "npm run buildInstall && cd ../../Packages/shared-types && npm run buildInstall",
+    "dockercmd": "node ./dist/src/app.js",
+    "start:nodemon": "nodemon",
     "lint": "eslint . --fix"
   },
   "keywords": [],
