@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id   Int    @id @default(autoincrement())
+  uid  String @unique
+  UserRoom User_Room[]
+}
+
+model Rooms {
+  id             Int         @id @default(autoincrement())
+  url            String
+  gameTableId    Int         @unique
+  roomOpenTime   DateTime    @default(now())
+  roomCloseTime  DateTime?
+  maxRoomSize    Int         @default(15)
+  gameTable      Game_Table  @relation(fields: [gameTableId], references: [id])
+  UserRoom       User_Room[]
+}
+
+model Game_Table {
+  id               Int     @id @default(autoincrement())
+  maxSeats         Int     @default(7)
+  minBet           Int
+  maxBet           Int
+  timeToAct        Int     @default(20) // seconds
+  timeToBet        Int     @default(15) // seconds
+  maxAwayTime      Int     @default(3) // minutes
+  numberOfDecks    Int     @default(6)
+  shuffleFrequency Int     @default(1)
+  blackJackPayout  Float   @default(1.5)
+  insurancePayout  Float   @default(2.0)
+  surrender        Boolean @default(false)
+  doubleAfterSplit Boolean @default(true)
+  maxSplits        Int     @default(3)
+  resplitAces      Boolean @default(true)
+  soft17           Boolean @default(true)
+  sideBets         Boolean @default(false)
+  betOnOtherBoxes  Boolean @default(false)
+  rejoin           Boolean @default(true)
+  Rooms            Rooms[]
+}
+
+model Seats {
+  id          Int         @id @default(autoincrement())
+  position    Int
+  userTableId Int         @unique
+  handsPlayed Int?
+  handsWon    Int?
+  blackjacks  Int?
+  userTable   User_Room   @relation(fields: [userTableId], references: [id])
+}
+
+model User_Room {
+  id            Int         @id @default(autoincrement())
+  userId        Int
+  roomId        Int
+  initialStack  Int?
+  finalStack    Int?
+  awayTime      DateTime?
+  host          Boolean
+  name          String
+  user          Users       @relation(fields: [userId], references: [id])
+  room          Rooms       @relation(fields: [roomId], references: [id])
+  Seats         Seats?
+  GameRequests  Game_Requests[]
+  
+  @@unique([userId, roomId])
+}
+
+model Game_Requests {
+  id             Int          @id @default(autoincrement())
+  userRoomId     Int
+  requestedStack Int
+  status         Request_Status @default(pending)
+  createdAt      DateTime     @default(now())
+  userRoom       User_Room    @relation(fields: [userRoomId], references: [id])
+}
+
+enum Request_Status {
+  pending
+  approved
+  filled
+}
+
