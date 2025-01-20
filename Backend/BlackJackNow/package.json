@@ -8,7 +8,7 @@
     "start": "ts-node ./src/app.ts",
     "buildInstall": "npm install && npm run build",
     "prepare:docker": "npm run buildInstall && cd ../../Packages/shared-types && npm run buildInstall",
-    "dockercmd": "node ./dist/src/app.js",
+    "dockercmd": "npx prisma migrate deploy && node ./dist/src/app.js",
     "start:nodemon": "nodemon",
     "lint": "eslint . --fix"
   },
@@ -46,3 +46,4 @@
     "swagger-ui-express": "^5.0.1"
   }
 }
+
