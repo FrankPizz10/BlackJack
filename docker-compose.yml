@@ -13,6 +13,7 @@ services:
       PORT: 4000
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
+      NODE_ENV: ${NODE_ENV}
     command: ['npm', 'run', 'dockercmd']
     container_name: backend
   frontend:
