@@ -19,11 +19,15 @@
     "sourceMap": true,
     "inlineSources": true,
     "paths": {
-      "shared-types/*": ["../../Packages/shared-types/dist/*"]
+      "@shared-types/*": ["../../Packages/shared-types/dist/src/*"]
     }
   },
   "include": ["src", "test"],
   "exclude": ["node_modules"],
-  "references": [{ "path": "../../Packages/shared-types" }]
+  "references": [
+    {
+      "path": "../../Packages/shared-types"
+    }
+  ]
 }
 

@@ -5,10 +5,11 @@
   "scripts": {
     "build": "tsc",
     "ci": "npm install && npm run build && npm run lint",
-    "start": "ts-node ./src/app.ts",
-    "buildInstall": "npm install && npm run build",
-    "prepare:docker": "npm run buildInstall && cd ../../Packages/shared-types && npm run buildInstall",
-    "dockercmd": "npx prisma migrate deploy && node ./dist/src/app.js",
+    "start": "node -r tsconfig-paths/register dist/src/app.js",
+    "build:backend": "npm install && npm run build",
+    "build:shared": "cd ../../Packages/shared-types && npm run buildInstall",
+    "prepare:docker": "npm run build:shared && npm run build:backend",
+    "dockercmd": "npx prisma migrate deploy && npm run start",
     "start:nodemon": "nodemon",
     "lint": "eslint . --fix"
   },
@@ -42,8 +43,11 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "redis": "^4.7.0",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "tsconfig-paths": "^4.2.0",
+    "zod": "^3.24.1"
   }
 }
 

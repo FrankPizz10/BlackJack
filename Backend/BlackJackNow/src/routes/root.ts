@@ -27,4 +27,3 @@ rootRouter.get('/', (req: Request, res: Response) => {
 });
 
 export default rootRouter;
-
