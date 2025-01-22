@@ -3,11 +3,6 @@ import { CardPair } from './CardPair';
 export type Hand = {
   cards: CardPair[];
   bet: number;
-  get_cards: () => CardPair[];
-  set_cards: (newCards: CardPair[]) => void;
-  get_bet: () => number;
-  set_bet: (newBet: number) => void;
-  get_hand_count: () => number;
 };
 
 /**
@@ -17,34 +12,6 @@ export type Hand = {
 export const createHand = (): Hand => {
   let cards: CardPair[] = [];
   let bet: number = 0;
-
-  /**
-   * Gets the current cards in the player's hand.
-   * @returns The current cards in the player's hand.
-   */
-  const get_cards = (): CardPair[] => cards;
-
-  /**
-   * Sets the current cards in the player's hand.
-   * @param newCards - The new cards to set in the player's hand.
-   */
-  const set_cards = (newCards: CardPair[]): void => {
-    cards = newCards;
-  };
-
-  /**
-   * Gets the current bet of the player.
-   * @returns The current bet of the player.
-   */
-  const get_bet = (): number => bet;
-
-  /**
-   * Sets the current bet of the player.
-   * @param newBet - The new bet to set.
-   */
-  const set_bet = (newBet: number): void => {
-    bet = newBet;
-  };
 
   /**
    * Calculates the count of the player's hand.
@@ -72,10 +39,5 @@ export const createHand = (): Hand => {
   return {
     cards,
     bet,
-    get_cards,
-    set_cards,
-    get_bet,
-    set_bet,
-    get_hand_count,
   };
 };
