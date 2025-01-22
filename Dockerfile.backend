@@ -11,6 +11,9 @@ COPY ./Backend/BlackJackNow/tsconfig.json ./
 # Copy local directories to the current local directory of our docker image (/app)
 COPY ./Backend/BlackJackNow/src ./src
 
+# Copy prisma schema
+COPY ./Backend/BlackJackNow/prisma ./prisma
+
 # Copy shared types
 COPY ./Packages/shared-types/src ../../Packages/shared-types/src
 COPY ./Packages/shared-types/package*.json ../../Packages/shared-types/

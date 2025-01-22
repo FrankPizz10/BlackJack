@@ -9,7 +9,9 @@
     "ci": "npm install && npm run build",
     "lint": "eslint . --fix",
     "preview": "vite preview",
-    "prepare:docker": "npm install && npm i -g serve && npm run build"
+    "prepare:frontend": "npm install && npm i -g serve && npm run build",
+    "prepare:packages": "cd ../../Packages/shared-types && npm run buildInstall",
+    "prepare:docker": "npm run prepare:packages && npm run prepare:frontend"
   },
   "dependencies": {
     "react": "^18.3.1",
