@@ -6,8 +6,9 @@
     "composite": true,
     "declarationMap": true,
     "strict": true,
-    "target": "es2019",
-    "lib": ["es2019", "dom"]
+    "skipLibCheck": true,
+    "target": "es2023",
+    "lib": ["es2023", "dom"]
   },
   "include": ["src/**/*"]
 } 
