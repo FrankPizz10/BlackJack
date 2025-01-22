@@ -1,9 +1,8 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response } from 'express';
 import { AppContext } from '../context';
 import { getRooms, createRoom } from '../services/roomsService';
 import roomsCreateSchema from '@shared-types/RoomsSchema';
 import { ZodError } from 'zod';
-import { error } from 'console';
 
 const roomsRouter = (context: AppContext): Router => {
   const router: Router = Router();
