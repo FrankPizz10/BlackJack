@@ -1,8 +1,9 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { AppContext } from '../context';
-import { getRooms, createRoom } from '../services/roomsService';
-import roomsCreateSchema from '@shared-types/RoomsSchema';
-import { ZodError } from 'zod';
+import {
+  getRoomsController,
+  postRoomsController,
+} from '../controllers/roomsController';
 
 const roomsRouter = (context: AppContext): Router => {
   const router: Router = Router();
@@ -26,15 +27,18 @@ const roomsRouter = (context: AppContext): Router => {
    *                 message:
    *                   type: string
    *                   example: "Rooms"
+   *       500:
+   *         description: Corrupted Cache
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: "Server error"
    */
-  router.get('/', async (req: Request, res: Response) => {
-    try {
-      const result = await getRooms(context);
-      res.json(result);
-    } catch (error: unknown) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  });
+  router.get('/', getRoomsController(context));
 
   /**
    * @swagger
@@ -45,7 +49,7 @@ const roomsRouter = (context: AppContext): Router => {
    *     tags:
    *       - Rooms
    *     responses:
-   *       200:
+   *       201:
    *         description: Successful response
    *         content:
    *           application/json:
@@ -55,30 +59,18 @@ const roomsRouter = (context: AppContext): Router => {
    *                 message:
    *                   type: string
    *                   example: "Rooms"
+   *       400:
+   *         description: Inavlid request
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: "Invalid request"
    */
-  router.post('/', async (req: Request, res: Response): Promise<void> => {
-    // Validate the request body using zod schema
-    const parsedRoomData = roomsCreateSchema.safeParse(req.body);
-
-    if (!parsedRoomData.success) {
-      res
-        .status(400)
-        .json({ error: new ZodError(parsedRoomData.error.errors) });
-      return;
-    }
-
-    try {
-      // Attempt to create the room using the validated data
-      const result = await createRoom(context, parsedRoomData.data);
-      res.status(201).json(result); // Use 201 Created for successful resource creation
-    } catch (error: unknown) {
-      console.error('Error creating room:', error);
-      res.status(500).json({
-        error: 'Failed to create room',
-        details: (error as Error).message,
-      });
-    }
-  });
+  router.post('/', postRoomsController(context));
 
   return router;
 };

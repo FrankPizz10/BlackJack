@@ -1,5 +1,5 @@
 import { AppContext } from '../context';
-import { RoomData } from '@shared-types/RoomsSchema';
+import { getRoomsSchema, RoomData } from '@shared-types/RoomsSchema';
 
 export const getRooms = async (context: AppContext) => {
   try {

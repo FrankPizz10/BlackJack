@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const roomsCreateSchema = z.object({
+export const roomsCreateSchema = z.object({
   id: z.number().int().optional(), // `id` is optional because it's auto-incremented
   url: z.string().min(1, 'URL is required'),
   gameTableId: z.number().int(), // Foreign key
@@ -13,6 +13,6 @@ const roomsCreateSchema = z.object({
     .default(15),
 });
 
-export type RoomData = z.infer<typeof roomsCreateSchema>;
+export const getRoomsSchema = z.array(roomsCreateSchema);
 
-export default roomsCreateSchema;
+export type RoomData = z.infer<typeof roomsCreateSchema>;

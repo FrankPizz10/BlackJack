@@ -15,7 +15,7 @@ model Users {
 
 model Rooms {
   id             Int         @id @default(autoincrement())
-  url            String
+  url            String      @unique
   gameTableId    Int         @unique
   roomOpenTime   DateTime    @default(now())
   roomCloseTime  DateTime?
