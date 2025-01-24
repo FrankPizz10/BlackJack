@@ -49,4 +49,3 @@ const mockContext: MockContext = {
 };
 
 export default mockContext;
-

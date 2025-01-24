@@ -23,7 +23,7 @@
     "lint:shared-types": "cd Packages/shared-types && npm run lint",
     "lint:frontend": "cd Frontend/BlackJackNow && npm run lint",
     "lint:backend": "cd Backend/BlackJackNow && npm run lint",
-    "ci": "npm run ci:shared-types && npm run ci:frontend && npm run ci:backend",
+    "ci": "npm run ci:shared-types && npm run ci:frontend && npm run ci:backend && npm run test",
     "ci:shared-types": "cd Packages/shared-types && npm run ci",
     "ci:frontend": "cd Frontend/BlackJackNow && npm run ci",
     "ci:backend": "cd Backend/BlackJackNow && npm run ci",

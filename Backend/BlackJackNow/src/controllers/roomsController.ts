@@ -48,4 +48,3 @@ export const postRoomsController = (context: AppContext) => {
     }
   };
 };
-

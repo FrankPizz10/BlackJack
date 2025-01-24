@@ -13,7 +13,8 @@
     "start:nodemon": "nodemon",
     "prisma:migrate": "npx prisma migrate dev",
     "lint": "eslint . --fix",
-    "test": "npm run prepare:docker && jest"
+    "test": "jest",
+    "buildAndTest": "npm run prepare:docker && jest"
   },
   "keywords": [],
   "author": "",
