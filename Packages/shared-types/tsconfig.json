@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
-    "declaration": true,
+    "rootDir": "./",
+    "baseUrl": "./",
     "composite": true,
+    "declaration": true,
     "declarationMap": true,
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "src/*"]
 }
 
