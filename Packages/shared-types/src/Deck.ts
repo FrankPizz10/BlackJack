@@ -1,15 +1,13 @@
-import { CardPair } from './CardPair';
-import { Suit } from './Suit';
 import { Card } from './Card';
+import { Suit } from './Suit';
+import { CardValue } from './CardValue';
 
 export type Deck = {
-  baseDeck: CardPair[];
-  currentDeck: CardPair[];
+  baseDeck: Card[];
+  currentDeck: Card[];
   numDecks: number;
   shuffle: () => void;
-  draw: () => CardPair | null;
-  getCurrentDeck: () => CardPair[];
-  getBaseDeck: () => CardPair[];
+  draw: () => Card | null;
 };
 
 export const createDeck = (numDecks: number = 1): Deck => {
@@ -19,7 +17,7 @@ export const createDeck = (numDecks: number = 1): Deck => {
    * @param {number} numDecks The number of decks to generate.
    * @returns {CardPair[]} The base deck.
    */
-  const generateBaseDeck = (numDecks: number): CardPair[] => {
+  const generateBaseDeck = (numDecks: number): Card[] => {
     /**
      * The suits of a deck of cards.
      * @type {Suit[]}
@@ -30,7 +28,7 @@ export const createDeck = (numDecks: number = 1): Deck => {
      * The cards of a deck of cards.
      * @type {Card[]}
      */
-    const cards: Card[] = [
+    const cards: CardValue[] = [
       '2',
       '3',
       '4',
@@ -122,7 +120,7 @@ export const createDeck = (numDecks: number = 1): Deck => {
    *
    * @returns {CardPair | null} The drawn card, or null if the deck is empty.
    */
-  const draw = (): CardPair | null => {
+  const draw = (): Card | null => {
     /**
      * Check if there are cards left in the current deck
      * @type {boolean}
@@ -140,31 +138,11 @@ export const createDeck = (numDecks: number = 1): Deck => {
     return null;
   };
 
-  /**
-   * Gets the current deck. This is the deck that is shuffled and drawn from.
-   *
-   * @returns {CardPair[]} The current deck.
-   */
-  const getCurrentDeck = (): CardPair[] => {
-    return currentDeck;
-  };
-
-  /**
-   * Gets the base deck. This is the deck that is used to generate the shuffled deck.
-   *
-   * @returns {CardPair[]} The base deck.
-   */
-  const getBaseDeck = (): CardPair[] => {
-    return baseDeck;
-  };
-
   return {
     baseDeck,
     currentDeck,
     numDecks,
     shuffle,
-    draw,
-    getCurrentDeck,
-    getBaseDeck,
+    draw
   };
 };

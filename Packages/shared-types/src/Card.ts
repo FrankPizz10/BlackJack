@@ -1,14 +1,7 @@
-export type Card =
-  | '2'
-  | '3'
-  | '4'
-  | '5'
-  | '6'
-  | '7'
-  | '8'
-  | '9'
-  | '10'
-  | 'J'
-  | 'Q'
-  | 'K'
-  | 'A';
+import { Suit } from './Suit';
+import { CardValue } from './CardValue';
+
+export interface Card {
+  suit: Suit;
+  card: CardValue;
+}

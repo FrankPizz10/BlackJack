@@ -1,43 +1,32 @@
-import { CardPair } from './CardPair';
+import { Card } from './Card';
 
 export type Hand = {
-  cards: CardPair[];
+  cards: Card[];
   bet: number;
+  is_current_hand: boolean;
+  is_done: boolean;
 };
 
-/**
- * Creates a new hand for the game of Blackjack.
- * @returns A new `Hand` object.
- */
-export const createHand = (): Hand => {
-  let cards: CardPair[] = [];
-  let bet: number = 0;
+export const computeHandCount = (hand: Hand): number => {
+  let total = 0;
+  let aces = 0;
 
-  /**
-   * Calculates the count of the player's hand.
-   * The count is returned as a number, where an Ace can be counted as 11 or 1.
-   * @returns The count of the player's hand.
-   */
-  const get_hand_count = (): number => {
-    let softCount = 0;
-    let hasAce = false;
-
-    for (const card of cards) {
-      if (card.card === 'A') {
-        softCount += 11;
-        hasAce = true;
-      } else if (['K', 'Q', 'J'].includes(card.card) || card.card === '10') {
-        softCount += 10;
-      } else {
-        softCount += parseInt(card.card, 10);
-      }
+  for (const card of hand.cards) {
+    if (card.card === 'A') {
+      total += 11;
+      aces++;
+    } else if (['K', 'Q', 'J', '10'].includes(card.card)) {
+      total += 10;
+    } else {
+      total += parseInt(card.card, 10);
     }
+  }
 
-    return hasAce && softCount > 21 ? softCount - 10 : softCount;
-  };
+  // Adjust for Aces if the total exceeds 21
+  while (total > 21 && aces > 0) {
+    total -= 10;
+    aces--;
+  }
 
-  return {
-    cards,
-    bet,
-  };
+  return total;
 };
