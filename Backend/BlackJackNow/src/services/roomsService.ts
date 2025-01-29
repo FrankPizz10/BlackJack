@@ -23,11 +23,24 @@ export const createRoom = async (context: AppContext, roomData: RoomData) => {
         maxRoomSize: roomData.maxRoomSize,
       },
     });
+    const roomsCache = await context.redis.get('rooms');
+    if (roomsCache) {
+      try {
+        const parsedRooms = JSON.parse(roomsCache);
 
-    const roomsCache = await context.redis.set(
-      'rooms',
-      JSON.stringify(roomData)
-    );
+        // Ensure parsedRooms is an array; if it's an object, wrap it in an array
+        const updatedRooms = Array.isArray(parsedRooms)
+          ? [...parsedRooms, roomData]
+          : [parsedRooms, roomData];
+
+        await context.redis.set('rooms', JSON.stringify(updatedRooms));
+      } catch (error) {
+        console.error('Error parsing roomsCache:', error);
+      }
+    } else {
+      // Initialize cache with the first room inside an array
+      await context.redis.set('rooms', JSON.stringify([roomData]));
+    }
     return { roomDb, roomsCache };
   } catch (error) {
     console.error('Error creating room:', error);

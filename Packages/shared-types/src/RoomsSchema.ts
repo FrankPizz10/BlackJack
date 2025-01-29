@@ -16,3 +16,8 @@ export const roomsCreateSchema = z.object({
 export const getRoomsSchema = z.array(roomsCreateSchema);
 
 export type RoomData = z.infer<typeof roomsCreateSchema>;
+
+export type groupedRoomData = {
+  roomsDb: RoomData[];
+  roomsCache: RoomData[];
+};

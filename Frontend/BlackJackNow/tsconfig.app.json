@@ -23,7 +23,7 @@
     "noUncheckedSideEffectImports": true,
 
     "paths": {
-      "shared-types/*": ["../../Packages/shared-types/dist/*"]
+      "@shared-types/*": ["../../Packages/shared-types/dist/src/*"]
     }
   },
   "include": ["src"]

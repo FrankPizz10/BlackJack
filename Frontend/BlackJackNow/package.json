@@ -9,11 +9,13 @@
     "ci": "npm install && npm run build",
     "lint": "eslint . --fix",
     "preview": "vite preview",
-    "prepare:frontend": "npm install && npm i -g serve && npm run build",
+    "prepare:frontend": "npm install && tsc -b && npm i -g serve && npm run build",
     "prepare:packages": "cd ../../Packages/shared-types && npm run buildInstall",
     "prepare:docker": "npm run prepare:packages && npm run prepare:frontend"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.64.2",
+    "axios": "^1.7.9",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
