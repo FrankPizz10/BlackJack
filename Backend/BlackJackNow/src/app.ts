@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import { createContext } from './context';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
+import { admin } from './services/firebaseService';
 
 dotenv.config();
 
@@ -19,6 +20,8 @@ app.use(express.json());
 app.use(cors());
 
 const context = createContext();
+
+console.log('Admin:', admin);
 
 app.use(rootRouter);
 app.use('/api/rooms', roomsRouter(context));
