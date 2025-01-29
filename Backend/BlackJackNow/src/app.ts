@@ -6,10 +6,13 @@ import swaggerDocs from './configs/swaggerConfig';
 import rootRouter from './routes/root';
 import dotenv from 'dotenv';
 import { createContext } from './context';
+import { Server } from 'socket.io';
+import { createServer } from 'http';
 
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -26,8 +29,27 @@ if (process.env.NODE_ENV === 'development') {
   console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
 }
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*',
+  },
+});
+
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  socket.on('message', (data) => {
+    console.log('Message received:', data);
+    io.emit('message', data); // Broadcast to all clients
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
 });
 
 export default app;
