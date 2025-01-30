@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from 'firebase/app';
 import { getAnalytics, Analytics } from 'firebase/analytics';
-import { getAuth, Auth } from 'firebase/auth';
+import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -21,4 +21,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const analytics: Analytics = getAnalytics(app);
 export const auth: Auth = getAuth(app);
+
+if (import.meta.env.VITE_NODE_ENV === 'development') {
+  connectAuthEmulator(auth, import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_URL);
+}
 

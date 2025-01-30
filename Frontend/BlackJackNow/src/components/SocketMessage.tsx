@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSocket } from '../providers/Socketprovider';
-import { auth } from '../services/auth/firebaseAuth';
+import { auth } from '../services/auth/firebaseAuthConfig';
 
 const SocketMessage = () => {
   const { socket } = useSocket();

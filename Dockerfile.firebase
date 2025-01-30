@@ -1,0 +1,17 @@
+# Start your image with a node base image
+FROM node:23-alpine
+
+# The /app directory should act as the main application directory
+WORKDIR /app
+
+# Firebase Configs for emulator
+COPY ./firebase.json ./firebase.json
+COPY ./.firebaserc ./.firebaserc
+
+# Install node packages, install serve, build the app, and remove dependencies at the end
+RUN npm install -g firebase-tools
+
+EXPOSE 4001 9099
+
+# Start the app
+CMD [ "firebase", "emulators:start" ]
