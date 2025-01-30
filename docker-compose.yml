@@ -9,6 +9,7 @@ services:
     depends_on:
       - postgres
       - redis
+      - firebase
     environment:
       PORT: 4000
       DATABASE_URL: ${DATABASE_URL}
