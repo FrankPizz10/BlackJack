@@ -1,25 +1,34 @@
-// import { useState } from 'react';
 import reactLogo from './assets/react.svg';
 import viteLogo from '/vite.svg';
 import './App.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-// import RoomDisplay from './components/roomDisplay';
+import RoomDisplay from './components/roomDisplay';
 import { SocketProvider } from './providers/Socketprovider';
 import SocketMessage from './components/SocketMessage';
 import { auth } from './services/auth/firebaseAuthConfig';
-import { useEffect } from 'react';
-import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import { useEffect, useState } from 'react';
+import {
+  onAuthStateChanged,
+  signInAnonymously,
+  UserCredential,
+} from 'firebase/auth';
 
 const queryClient = new QueryClient();
 
 function App() {
+  const [user, setUser] = useState<UserCredential | null>(null);
+
   // Sign in a user with an anonymous credential
   useEffect(() => {
     onAuthStateChanged(auth, async () => {
       const user = await signInAnonymously(auth);
-      console.log(user);
+      setUser(user);
     });
   }, []);
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -34,7 +43,7 @@ function App() {
         </div>
         <h1>Vite + React</h1>
         <div className="card">
-          {/* <RoomDisplay /> */}
+          <RoomDisplay />
           <SocketMessage />
         </div>
         <p className="read-the-docs">

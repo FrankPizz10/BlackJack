@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 import { createContext } from './context';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
-import { admin } from './services/firebaseService';
+import { basicfirebaseAuth } from './middleware/firebaseAuth';
 
 dotenv.config();
 
@@ -19,15 +19,12 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cors());
 
-const context = createContext();
+if (process.env.DISABLE_MIDDLEWARE !== 'true') {
+  // Use firebase middleware if not disabled
+  app.use('/api', basicfirebaseAuth);
+}
 
-console.log('Firebase emulator host:', process.env.FIREBASE_AUTH_EMULATOR_HOST);
-admin
-  .auth()
-  .listUsers()
-  .then((users) => {
-    console.log('Users:', users);
-  });
+const context = createContext();
 
 app.use(rootRouter);
 app.use('/api/rooms', roomsRouter(context));
