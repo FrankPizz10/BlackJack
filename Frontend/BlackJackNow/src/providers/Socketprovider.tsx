@@ -1,15 +1,8 @@
 import { getIdToken, onAuthStateChanged, User } from 'firebase/auth';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { auth } from '../services/auth/firebaseAuthConfig';
-
-// Define the type for our context value
-interface SocketContextType {
-  socket: Socket | null;
-}
-
-// Create the context with an initial value of null
-const SocketContext = createContext<SocketContextType | undefined>(undefined);
+import { SocketContext } from './SocketContext'; // Import the context
 
 // Provider component
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -24,9 +17,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!user) return;
 
       try {
-        const token = await getIdToken(user); // Get the Firebase token
+        const token = await getIdToken(user);
         newSocket = io(import.meta.env.VITE_SERVER_URL, {
-          auth: { token }, // No need for 'Bearer' prefix with Socket.io
+          auth: { token },
         });
 
         setSocket(newSocket);
@@ -35,7 +28,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     };
 
-    // Listen for auth state changes and initialize socket accordingly
     const unsubscribe = onAuthStateChanged(auth, initializeSocket);
 
     return () => {
@@ -49,14 +41,5 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       {children}
     </SocketContext.Provider>
   );
-};
-
-// Custom hook for consuming the context
-export const useSocket = (): SocketContextType => {
-  const context = useContext(SocketContext);
-  if (!context) {
-    throw new Error('useSocket must be used within a SocketProvider');
-  }
-  return context;
 };
 

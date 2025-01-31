@@ -9,7 +9,9 @@ const getIdToken = async () => {
       throw new Error('No authentication token found');
     }
     return token;
-  } catch (error) {}
+  } catch {
+    return null;
+  }
 };
 
 // Function to make API requests
@@ -32,6 +34,8 @@ export const apiClient = async (
     });
 
     return response.data; // Return the data from the response
-  } catch (error) {}
+  } catch {
+    return null;
+  }
 };
 

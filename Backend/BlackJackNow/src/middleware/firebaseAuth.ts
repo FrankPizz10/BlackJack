@@ -61,4 +61,3 @@ export const firebaseAuthSocket = (
       next(new Error('Authentication failed') as ExtendedError);
     });
 };
-
