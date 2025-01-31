@@ -1,3 +1,4 @@
+import { ExtendedError, Socket } from 'socket.io';
 import { admin } from '../services/firebaseService';
 import { Request, Response, NextFunction } from 'express';
 
@@ -11,7 +12,7 @@ const retrieveToken = (req: Request): string | null => {
 };
 
 // Middleware function to check firebase authentication token
-export const basicfirebaseAuth = async (
+export const firebaseAuthApi = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -35,5 +36,29 @@ export const basicfirebaseAuth = async (
     console.error('Invalid token:', error);
     res.status(500).json({ error: 'Invalid token' });
   }
+};
+
+export const firebaseAuthSocket = (
+  socket: Socket,
+  next: (err?: ExtendedError) => void
+): void => {
+  const token = socket.handshake.auth?.token;
+
+  if (!token) {
+    return next(new Error('Authentication token is missing') as ExtendedError);
+  }
+
+  // Verify Firebase token asynchronously but ensure next() is called correctly
+  admin
+    .auth()
+    .verifyIdToken(token)
+    .then((decodedToken) => {
+      socket.data.user = decodedToken; // Store user data in socket instance
+      next(); // Proceed to the next middleware
+    })
+    .catch((error) => {
+      console.error('Socket authentication failed:', error);
+      next(new Error('Authentication failed') as ExtendedError);
+    });
 };
 

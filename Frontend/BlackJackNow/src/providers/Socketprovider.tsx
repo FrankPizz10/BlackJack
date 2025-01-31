@@ -1,5 +1,7 @@
+import { getIdToken, onAuthStateChanged, User } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { auth } from '../services/auth/firebaseAuthConfig';
 
 // Define the type for our context value
 interface SocketContextType {
@@ -16,11 +18,29 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:4000'); // Replace with your backend URL
-    setSocket(newSocket);
+    let newSocket: Socket | null = null;
+
+    const initializeSocket = async (user: User | null) => {
+      if (!user) return;
+
+      try {
+        const token = await getIdToken(user); // Get the Firebase token
+        newSocket = io(import.meta.env.VITE_SERVER_URL, {
+          auth: { token }, // No need for 'Bearer' prefix with Socket.io
+        });
+
+        setSocket(newSocket);
+      } catch (error) {
+        console.error('Error getting Firebase token:', error);
+      }
+    };
+
+    // Listen for auth state changes and initialize socket accordingly
+    const unsubscribe = onAuthStateChanged(auth, initializeSocket);
 
     return () => {
-      newSocket.disconnect();
+      if (newSocket) newSocket.disconnect();
+      unsubscribe();
     };
   }, []);
 

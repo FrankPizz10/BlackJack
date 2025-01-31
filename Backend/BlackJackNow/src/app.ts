@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 import { createContext } from './context';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
-import { basicfirebaseAuth } from './middleware/firebaseAuth';
+import { firebaseAuthApi, firebaseAuthSocket } from './middleware/firebaseAuth';
 
 dotenv.config();
 
@@ -18,11 +18,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(cors());
-
-if (process.env.DISABLE_MIDDLEWARE !== 'true') {
-  // Use firebase middleware if not disabled
-  app.use('/api', basicfirebaseAuth);
-}
 
 const context = createContext();
 
@@ -44,6 +39,12 @@ const io = new Server(httpServer, {
     origin: '*',
   },
 });
+
+if (process.env.DISABLE_MIDDLEWARE !== 'true') {
+  // Use firebase middleware if not disabled
+  app.use('/api', firebaseAuthApi);
+  io.use(firebaseAuthSocket);
+}
 
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
