@@ -21,7 +21,13 @@ app.use(cors());
 
 const context = createContext();
 
-console.log('Admin:', admin);
+console.log('Firebase emulator host:', process.env.FIREBASE_AUTH_EMULATOR_HOST);
+admin
+  .auth()
+  .listUsers()
+  .then((users) => {
+    console.log('Users:', users);
+  });
 
 app.use(rootRouter);
 app.use('/api/rooms', roomsRouter(context));
