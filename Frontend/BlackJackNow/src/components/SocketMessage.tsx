@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useSocket } from '../providers/Socketprovider';
+import { auth } from '../services/auth/firebaseAuth';
 
 const SocketMessage = () => {
   const { socket } = useSocket();
   const [message, setMessage] = useState('');
+
+  console.log('Auth:', auth);
 
   if (!socket) {
     return <div>Loading...</div>;
