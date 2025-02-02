@@ -18,4 +18,3 @@ admin.initializeApp({
 });
 
 export { admin };
-

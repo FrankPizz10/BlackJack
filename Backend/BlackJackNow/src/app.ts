@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 import { createContext } from './context';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
-import { admin } from './services/firebaseService';
+import { firebaseAuthApi, firebaseAuthSocket } from './middleware/firebaseAuth';
 
 dotenv.config();
 
@@ -20,14 +20,6 @@ app.use(express.json());
 app.use(cors());
 
 const context = createContext();
-
-console.log('Firebase emulator host:', process.env.FIREBASE_AUTH_EMULATOR_HOST);
-admin
-  .auth()
-  .listUsers()
-  .then((users) => {
-    console.log('Users:', users);
-  });
 
 app.use(rootRouter);
 app.use('/api/rooms', roomsRouter(context));
@@ -47,6 +39,12 @@ const io = new Server(httpServer, {
     origin: '*',
   },
 });
+
+if (process.env.DISABLE_MIDDLEWARE !== 'true') {
+  // Use firebase middleware if not disabled
+  app.use('/api', firebaseAuthApi);
+  io.use(firebaseAuthSocket);
+}
 
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);

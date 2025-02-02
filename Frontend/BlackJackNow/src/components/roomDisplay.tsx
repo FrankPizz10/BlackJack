@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchRooms } from '../services/api/roomsService';
+import { fetchRooms } from '../services/api/roomsRequests';
 import { RoomData, groupedRoomData } from '@shared-types/RoomsSchema';
 
 const RoomDisplay = () => {
