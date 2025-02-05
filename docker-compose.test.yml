@@ -1,0 +1,16 @@
+services:
+  backend-test:
+    image: blackjacknow-backend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.backend-test
+    ports:
+      - '4003:4003'
+    environment:
+      PORT: 4003
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      NODE_ENV: ${NODE_ENV}
+    command: ['npm', 'run', 'test']
+    container_name: backend-test
+
