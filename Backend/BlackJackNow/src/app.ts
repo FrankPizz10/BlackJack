@@ -9,7 +9,7 @@ import { createContext } from './context';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { firebaseAuthApi, firebaseAuthSocket } from './middleware/firebaseAuth';
-// import { Queue } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 
 dotenv.config();
 
@@ -47,14 +47,41 @@ if (process.env.DISABLE_MIDDLEWARE !== 'true') {
   io.use(firebaseAuthSocket);
 }
 
-// const turnQueue = new Queue('turnQueue', { connection: context.redis });
+const turnQueue = new Queue('turnQueue', { connection: context.redis });
+
+const TURN_TIME_LIMIT = 30000; // 30 seconds
+
+const startTurn = async (room: string) => {
+  if (!room) return;
+  await turnQueue.add(
+    'turn',
+    { room },
+    { delay: TURN_TIME_LIMIT, removeOnComplete: true, removeOnFail: true }
+  );
+};
+
+const worker = new Worker(
+  'turnQueue',
+  async (job) => {
+    const { room } = job.data;
+    // broadcast a message to all sockets
+    io.to(room).emit(`timer reset for room:${room}`);
+    await startTurn(room);
+  },
+  { connection: context.redis }
+);
 
 // let timers = new Map<string, NodeJS.Timeout>();
 // const resetTime = 60 * 1000; // 1 minute
 
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
-
+  // for (let i = 0; i < 10; i++) {
+  //   socket.join(i.toString());
+  //   startTurn(i.toString());
+  // }
+  socket.join(socket.id);
+  startTurn(socket.id);
   // const startTimer = () => {
   //   const timer = setTimeout(() => {
   //     io.to(socket.id).emit('timer reset');

@@ -14,7 +14,7 @@ if (!redisUrl) {
   throw new Error('REDIS_URL is not defined');
 }
 
-const redis = new Redis(redisUrl);
+const redis = new Redis(redisUrl, { maxRetriesPerRequest: null });
 
 export const createContext = (overrides?: Partial<Context>): Context => ({
   prisma: overrides?.prisma || prisma,
