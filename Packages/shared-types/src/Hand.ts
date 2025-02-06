@@ -7,11 +7,11 @@ export type Hand = {
   is_done: boolean;
 };
 
-export const computeHandCount = (hand: Hand): number => {
+export const computeHandCount = (cards: Card[]): number => {
   let total = 0;
   let aces = 0;
 
-  for (const card of hand.cards) {
+  for (const card of cards) {
     if (card.card === 'A') {
       total += 11;
       aces++;

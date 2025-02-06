@@ -1,7 +1,11 @@
 export type Action =
+  | 'None'
   | 'Hit'
   | 'Stand'
   | 'Double Down'
   | 'Split'
   | 'Surrender' 
-  | 'Deal';
+  | 'Deal'
+  | 'Dealer'
+  | 'CheckHand'
+  | 'Bet';
