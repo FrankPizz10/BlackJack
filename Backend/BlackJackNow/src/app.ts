@@ -9,7 +9,8 @@ import { createContext } from './context';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { firebaseAuthApi, firebaseAuthSocket } from './middleware/firebaseAuth';
-import { Queue, Worker } from 'bullmq';
+import { Queue } from 'bullmq';
+import { TestGameState, TURN_TIME_LIMIT } from '@shared-types/Bullmq/jobs';
 
 dotenv.config();
 
@@ -49,50 +50,29 @@ if (process.env.DISABLE_MIDDLEWARE !== 'true') {
 
 const turnQueue = new Queue('turnQueue', { connection: context.redis });
 
-const TURN_TIME_LIMIT = 30000; // 30 seconds
-
-const startTurn = async (room: string) => {
-  if (!room) return;
+const startTurn = async (roomId: string) => {
+  if (!roomId) return;
   await turnQueue.add(
     'turn',
-    { room },
+    { roomId },
     { delay: TURN_TIME_LIMIT, removeOnComplete: true, removeOnFail: true }
   );
 };
 
-const worker = new Worker(
-  'turnQueue',
-  async (job) => {
-    const { room } = job.data;
-    // broadcast a message to all sockets
-    io.to(room).emit(`timer reset for room:${room}`);
-    await startTurn(room);
-  },
-  { connection: context.redis }
-);
-
-// let timers = new Map<string, NodeJS.Timeout>();
-// const resetTime = 60 * 1000; // 1 minute
-
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
-  // for (let i = 0; i < 10; i++) {
-  //   socket.join(i.toString());
-  //   startTurn(i.toString());
-  // }
+  const gameState: TestGameState = { turn: 0, roomId: socket.id };
+  // update game state
+  context.redis.set(`gameState:${socket.id}`, JSON.stringify(gameState));
+  // subscribe to a redis channel
+  context.redisSub.subscribe(`channel:gameState:${socket.id}`, (err) => {
+    if (err) {
+      console.error('Error subscribing to channel:', err);
+    }
+    console.log(`Subscribed to channel:gameState:${socket.id}`);
+  });
   socket.join(socket.id);
   startTurn(socket.id);
-  // const startTimer = () => {
-  //   const timer = setTimeout(() => {
-  //     io.to(socket.id).emit('timer reset');
-  //     startTimer(); // Restart the timer after sending the event
-  //   }, resetTime / 10); // 10 secs
-
-  //   timers.set(socket.id, timer);
-  // };
-
-  // // Start the repeating timer
-  // startTimer();
 
   socket.on('message', (data) => {
     console.log('Message received:', data);
@@ -102,6 +82,15 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
+});
+
+context.redisSub.on('message', (channel, message) => {
+  if (channel.startsWith('channel:gameState:')) {
+    const gameState = JSON.parse(message);
+    console.log('Subscriber received message:', gameState);
+    io.to(gameState.roomId).emit('gameState', gameState);
+    startTurn(gameState.roomId);
+  }
 });
 
 export default app;

@@ -26,11 +26,13 @@ afterAll(() => {
 // Create mock instances
 const prismaMock = new PrismaClient() as unknown as DeepMockProxy<PrismaClient>;
 const redisMock = new Redis() as unknown as DeepMockProxy<Redis>;
+const redisSubMock = new Redis() as unknown as DeepMockProxy<Redis>;
 
 // Create a test context
 export const mockContext = createContext({
   prisma: prismaMock,
   redis: redisMock,
+  redisSub: redisSubMock,
 });
 
 export type MockContext = typeof mockContext;

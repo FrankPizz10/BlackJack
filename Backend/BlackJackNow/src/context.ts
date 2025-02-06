@@ -4,6 +4,7 @@ import Redis from 'ioredis';
 type Context = {
   prisma: PrismaClient;
   redis: Redis;
+  redisSub: Redis;
 };
 
 const prisma = new PrismaClient();
@@ -15,10 +16,12 @@ if (!redisUrl) {
 }
 
 const redis = new Redis(redisUrl, { maxRetriesPerRequest: null });
+const redisSub = redis.duplicate();
 
 export const createContext = (overrides?: Partial<Context>): Context => ({
   prisma: overrides?.prisma || prisma,
   redis: overrides?.redis || redis,
+  redisSub: overrides?.redisSub || redisSub,
 });
 
 export type AppContext = ReturnType<typeof createContext>;

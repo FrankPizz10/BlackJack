@@ -1,0 +1,25 @@
+# Start your image with a node base image
+FROM node:23-alpine
+
+# The /app directory should act as the main application directory
+WORKDIR /app/GameTimer/Workers
+
+# Copy the app package and package-lock.json file
+COPY ./GameTimer/Workers/package*.json ./
+COPY ./GameTimer/Workers/tsconfig.json ./
+
+# Copy local directories to the current local directory of our docker image (/app)
+COPY ./GameTimer/Workers/src ./src
+
+# Copy shared types
+COPY ./Packages/shared-types/src ../../Packages/shared-types/src
+COPY ./Packages/shared-types/package*.json ../../Packages/shared-types/
+COPY ./Packages/shared-types/tsconfig.json ../../Packages/shared-types/
+
+# Install node packages, install serve, build the app, and remove dependencies at the end
+RUN npm run prepare:docker
+
+EXPOSE 4000
+
+# Start the app
+CMD [ "npm", "run", "dockercmd" ]

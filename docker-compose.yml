@@ -30,6 +30,15 @@ services:
       DISABLE_MIDDLEWARE: ${DISABLE_MIDDLEWARE}
     command: ['npm', 'run', 'dockercmd']
     container_name: backend
+  queueWorker:
+    image: blackjacknow-queue:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment:
+      REDIS_URL: ${REDIS_URL}
+    command: ['npm', 'run', 'dockercmd']
+    container_name: queue-worker
   frontend:
     image: blackjacknow-frontend:latest
     build:
