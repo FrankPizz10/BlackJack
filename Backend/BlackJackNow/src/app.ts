@@ -52,10 +52,22 @@ const turnQueue = new Queue('turnQueue', { connection: context.redis });
 
 const startTurn = async (roomId: string): Promise<string | undefined> => {
   if (!roomId) return;
+
+  const existingJob = await turnQueue.getJob(roomId);
+  if (existingJob) {
+    console.log(`Job already exists for room: ${roomId}, skipping new job.`);
+    return existingJob.id;
+  }
+
   const job = await turnQueue.add(
     'turn',
     { roomId },
-    { delay: TURN_TIME_LIMIT, removeOnComplete: true, removeOnFail: true }
+    {
+      delay: TURN_TIME_LIMIT,
+      removeOnComplete: true,
+      removeOnFail: true,
+      jobId: roomId,
+    }
   );
   return job.id;
 };
@@ -126,14 +138,23 @@ io.on('connection', async (socket) => {
     }
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log('User disconnected:', socket.id);
-    // remove job
-    turnQueue.getJob(socket.id).then((job) => job?.remove());
-    // remove redis game state
-    context.redis.del(`gameState:${socket.id}`);
-    // unsubscribe
-    context.redisSub.unsubscribe(`channel:gameState:${socket.id}`);
+
+    const gameStateRaw = await context.redis.get(`gameState:${socket.id}`);
+    if (gameStateRaw) {
+      const gameState: TestGameState = JSON.parse(gameStateRaw);
+      if (gameState.jobId) {
+        const job = await turnQueue.getJob(gameState.jobId);
+        if (job) await job.remove();
+      }
+    }
+
+    // Remove Redis game state
+    await context.redis.del(`gameState:${socket.id}`);
+
+    // Unsubscribe
+    await context.redisSub.unsubscribe(`channel:gameState:${socket.id}`);
   });
 });
 
