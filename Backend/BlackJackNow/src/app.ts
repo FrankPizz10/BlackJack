@@ -50,50 +50,63 @@ if (process.env.DISABLE_MIDDLEWARE !== 'true') {
 
 const turnQueue = new Queue('turnQueue', { connection: context.redis });
 
-const startTurn = async (roomId: string): Promise<string | undefined> => {
+const startTurn = async (roomId: string): Promise<void> => {
   if (!roomId) return;
-
-  const existingJob = await turnQueue.getJob(roomId);
-  if (existingJob) {
-    console.log(`Job already exists for room: ${roomId}, skipping new job.`);
-    return existingJob.id;
-  }
-
-  const job = await turnQueue.add(
-    'turn',
-    { roomId },
-    {
-      delay: TURN_TIME_LIMIT,
-      removeOnComplete: true,
-      removeOnFail: true,
-      jobId: roomId,
+  try {
+    const existingJob = await turnQueue.getJob(roomId);
+    if (existingJob) {
+      console.log(`Job already exists for room: ${roomId}, skipping new job.`);
+      return;
     }
-  );
-  return job.id;
+  } catch (err) {
+    console.error('Error checking for existing job:', err);
+    throw 'Error checking for existing job';
+  }
+  try {
+    await turnQueue.add(
+      'turn',
+      { roomId },
+      {
+        delay: TURN_TIME_LIMIT,
+        removeOnComplete: true,
+        removeOnFail: true,
+        jobId: roomId,
+      }
+    );
+  } catch (err) {
+    console.error('Error starting turn job:', err);
+    throw 'Error starting turn job';
+  }
 };
+
+// subscribe to a redis channel
+context.redisSub.subscribe(`channel:gameStateUpdates`, (err) => {
+  if (err) {
+    console.error('Error subscribing to channel:', err);
+  }
+  console.log(`Subscribed to channel:gameStateUpdates`);
+});
 
 io.on('connection', async (socket) => {
   console.log('A user connected:', socket.id);
-  // subscribe to a redis channel
-  context.redisSub.subscribe(`channel:gameState:${socket.id}`, (err) => {
-    if (err) {
-      console.error('Error subscribing to channel:', err);
-    }
-    console.log(`Subscribed to channel:gameState:${socket.id}`);
-  });
   // join room
   socket.join(socket.id);
   // start turn
-  const jobId = await startTurn(socket.id);
-  if (!jobId) {
-    console.error('Error starting turn job');
-    return;
+  try {
+    await startTurn(socket.id);
+  } catch (err) {
+    console.error('Error starting turn job:', err);
   }
   // update redis game state
-  const gameState: TestGameState = { turn: 0, roomId: socket.id, jobId };
-  context.redis.set(`gameState:${socket.id}`, JSON.stringify(gameState));
-  // broadcast game state
-  io.to(socket.id).emit('gameState', gameState);
+  try {
+    const gameState: TestGameState = { turn: 0, roomId: socket.id };
+    context.redis.set(`gameState:${socket.id}`, JSON.stringify(gameState));
+    if (!gameState.roomId) return;
+    // broadcast game state
+    io.to(socket.id).emit('gameState', gameState);
+  } catch (err) {
+    console.error('Error updating game state:', err);
+  }
 
   socket.on('takeAction', async (data) => {
     console.log('Action received:', data);
@@ -107,32 +120,34 @@ io.on('connection', async (socket) => {
 
       const gameState: TestGameState = JSON.parse(gameStateRaw);
       console.log('Action Game state:', gameState);
-
-      if (!gameState.jobId) {
-        console.error('No jobId found in game state');
-        return;
-      }
+      if (!gameState) return console.error('Game state invalid');
       // Update game state
       gameState.turn += 1;
       // Remove old job from queue
-      const job = await turnQueue.getJob(gameState.jobId);
+      const job = await turnQueue.getJob(gameState.roomId);
       console.log('Found job:', job);
       if (job) await job.remove();
 
       // Start a new turn job
-      const jobId = await startTurn(gameState.roomId);
-      if (!jobId) return console.error('Error starting turn job');
-
-      gameState.jobId = jobId;
+      try {
+        await startTurn(gameState.roomId);
+      } catch (err) {
+        console.error('Error starting turn job:', err);
+        return;
+      }
 
       // Update Redis game state
-      await context.redis.set(
-        `gameState:${gameState.roomId}`,
-        JSON.stringify(gameState)
-      );
+      try {
+        await context.redis.set(
+          `gameState:${gameState.roomId}`,
+          JSON.stringify(gameState)
+        );
 
-      // Broadcast updated game state
-      io.to(gameState.roomId).emit('gameState', gameState);
+        // Broadcast updated game state
+        io.to(gameState.roomId).emit('gameState', gameState);
+      } catch (err) {
+        console.error('Error updating game state:', err);
+      }
     } catch (err) {
       console.error('Error handling takeAction:', err);
     }
@@ -144,8 +159,8 @@ io.on('connection', async (socket) => {
     const gameStateRaw = await context.redis.get(`gameState:${socket.id}`);
     if (gameStateRaw) {
       const gameState: TestGameState = JSON.parse(gameStateRaw);
-      if (gameState.jobId) {
-        const job = await turnQueue.getJob(gameState.jobId);
+      if (gameState.roomId) {
+        const job = await turnQueue.getJob(gameState.roomId);
         if (job) await job.remove();
       }
     }
@@ -160,21 +175,17 @@ io.on('connection', async (socket) => {
 
 context.redisSub.on('message', async (channel, message) => {
   // check if message is from gameState channel
-  if (channel.startsWith('channel:gameState:')) {
+  if (channel === 'channel:gameStateUpdates') {
     const gameState: TestGameState = JSON.parse(message);
     console.log('Subscriber received message:', gameState);
     if (!gameState.roomId) return;
     // start new job
-    const jobId = await startTurn(gameState.roomId);
-    if (!jobId) return console.error('Error starting turn job');
-    // update redis game state
-    context.redis.set(
-      `gameState:${gameState.roomId}`,
-      JSON.stringify({
-        ...gameState,
-        jobId,
-      })
-    );
+    try {
+      await startTurn(gameState.roomId);
+    } catch (err) {
+      console.error('Error starting turn job:', err);
+      return;
+    }
     // broadcast game state
     io.to(gameState.roomId).emit('gameState', gameState);
   }

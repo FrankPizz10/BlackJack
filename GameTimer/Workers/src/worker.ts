@@ -18,25 +18,29 @@ const redisPub = redis.duplicate();
 new Worker(
   'turnQueue',
   async (job) => {
-    const { roomId } = job.data;
-    console.log('Turn started for room:', roomId);
-    // Get game state
-    const gameStateRaw = await redis.get(`gameState:${roomId}`);
-    if (gameStateRaw) {
-      // Update game state
-      const gameState: TestGameState = JSON.parse(gameStateRaw);
-      gameState.turn += 1;
-      gameState.jobId = undefined;
-      // Set game state
-      await redis.set(`gameState:${roomId}`, JSON.stringify(gameState));
-      // Update channel
-      await redisPub.publish(
-        `channel:gameState:${roomId}`,
-        JSON.stringify(gameState)
-      );
-      console.log(
-        `Turn updated for room:${roomId} at ${new Date().toLocaleTimeString()}`
-      );
+    try {
+      const { roomId } = job.data;
+      console.log('Turn started for room:', roomId);
+      // Get game state
+      const gameStateRaw = await redis.get(`gameState:${roomId}`);
+      if (gameStateRaw) {
+        // Update game state
+        const gameState: TestGameState = JSON.parse(gameStateRaw);
+        if (!gameState) return console.error('Game state invalid');
+        gameState.turn += 1;
+        // Set game state
+        await redis.set(`gameState:${roomId}`, JSON.stringify(gameState));
+        // Update channel
+        await redisPub.publish(
+          `channel:gameStateUpdates`,
+          JSON.stringify(gameState)
+        );
+        console.log(
+          `Turn updated for room:${roomId} at ${new Date().toLocaleTimeString()}`
+        );
+      }
+    } catch (error) {
+      console.error('Error processing turn job:', error);
     }
   },
   { connection: redis }
