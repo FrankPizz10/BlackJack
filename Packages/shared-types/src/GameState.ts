@@ -1,5 +1,5 @@
 import { Card } from './Card';
-import { Deck, shuffle, draw } from './Deck';
+import { Deck, draw } from './Deck';
 import { Hand, computeHandCount } from './Hand';
 import { Seat } from './Seat';
 import { Action } from './Action';
