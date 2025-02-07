@@ -31,7 +31,7 @@ const SocketMessage = () => {
     <div>
       {socket?.connected ? 'Connected' : 'Disconnected'}
       {/* <p>{message}</p> */}
-      <button onClick={() => socket?.emit('message', 'Hello from the client!')}>
+      <button onClick={() => socket?.emit('takeAction', { roomId: socket.id })}>
         Send message
       </button>
     </div>

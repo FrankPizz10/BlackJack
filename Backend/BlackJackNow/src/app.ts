@@ -50,20 +50,18 @@ if (process.env.DISABLE_MIDDLEWARE !== 'true') {
 
 const turnQueue = new Queue('turnQueue', { connection: context.redis });
 
-const startTurn = async (roomId: string) => {
+const startTurn = async (roomId: string): Promise<string | undefined> => {
   if (!roomId) return;
-  await turnQueue.add(
+  const job = await turnQueue.add(
     'turn',
     { roomId },
     { delay: TURN_TIME_LIMIT, removeOnComplete: true, removeOnFail: true }
   );
+  return job.id;
 };
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   console.log('A user connected:', socket.id);
-  const gameState: TestGameState = { turn: 0, roomId: socket.id };
-  // update game state
-  context.redis.set(`gameState:${socket.id}`, JSON.stringify(gameState));
   // subscribe to a redis channel
   context.redisSub.subscribe(`channel:gameState:${socket.id}`, (err) => {
     if (err) {
@@ -71,25 +69,93 @@ io.on('connection', (socket) => {
     }
     console.log(`Subscribed to channel:gameState:${socket.id}`);
   });
+  // join room
   socket.join(socket.id);
-  startTurn(socket.id);
+  // start turn
+  const jobId = await startTurn(socket.id);
+  if (!jobId) {
+    console.error('Error starting turn job');
+    return;
+  }
+  // update redis game state
+  const gameState: TestGameState = { turn: 0, roomId: socket.id, jobId };
+  context.redis.set(`gameState:${socket.id}`, JSON.stringify(gameState));
+  // broadcast game state
+  io.to(socket.id).emit('gameState', gameState);
 
-  socket.on('message', (data) => {
-    console.log('Message received:', data);
-    io.emit('message', data); // Broadcast to all clients
+  socket.on('takeAction', async (data) => {
+    console.log('Action received:', data);
+
+    if (!data.roomId) return; // Early return if roomId is missing
+
+    try {
+      // Get and parse game state
+      const gameStateRaw = await context.redis.get(`gameState:${data.roomId}`);
+      if (!gameStateRaw) return console.error('Game state not found');
+
+      const gameState: TestGameState = JSON.parse(gameStateRaw);
+      console.log('Action Game state:', gameState);
+
+      if (!gameState.jobId) {
+        console.error('No jobId found in game state');
+        return;
+      }
+      // Update game state
+      gameState.turn += 1;
+      // Remove old job from queue
+      const job = await turnQueue.getJob(gameState.jobId);
+      console.log('Found job:', job);
+      if (job) await job.remove();
+
+      // Start a new turn job
+      const jobId = await startTurn(gameState.roomId);
+      if (!jobId) return console.error('Error starting turn job');
+
+      gameState.jobId = jobId;
+
+      // Update Redis game state
+      await context.redis.set(
+        `gameState:${gameState.roomId}`,
+        JSON.stringify(gameState)
+      );
+
+      // Broadcast updated game state
+      io.to(gameState.roomId).emit('gameState', gameState);
+    } catch (err) {
+      console.error('Error handling takeAction:', err);
+    }
   });
 
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
+    // remove job
+    turnQueue.getJob(socket.id).then((job) => job?.remove());
+    // remove redis game state
+    context.redis.del(`gameState:${socket.id}`);
+    // unsubscribe
+    context.redisSub.unsubscribe(`channel:gameState:${socket.id}`);
   });
 });
 
-context.redisSub.on('message', (channel, message) => {
+context.redisSub.on('message', async (channel, message) => {
+  // check if message is from gameState channel
   if (channel.startsWith('channel:gameState:')) {
-    const gameState = JSON.parse(message);
+    const gameState: TestGameState = JSON.parse(message);
     console.log('Subscriber received message:', gameState);
+    if (!gameState.roomId) return;
+    // start new job
+    const jobId = await startTurn(gameState.roomId);
+    if (!jobId) return console.error('Error starting turn job');
+    // update redis game state
+    context.redis.set(
+      `gameState:${gameState.roomId}`,
+      JSON.stringify({
+        ...gameState,
+        jobId,
+      })
+    );
+    // broadcast game state
     io.to(gameState.roomId).emit('gameState', gameState);
-    startTurn(gameState.roomId);
   }
 });
 

@@ -20,17 +20,23 @@ new Worker(
   async (job) => {
     const { roomId } = job.data;
     console.log('Turn started for room:', roomId);
-    const gameState = await redis.get(`gameState:${roomId}`);
-    if (gameState) {
-      const parsedGameState = JSON.parse(gameState) as TestGameState;
-      parsedGameState.turn += 1;
-      await redis.set(`gameState:${roomId}`, JSON.stringify(parsedGameState));
+    // Get game state
+    const gameStateRaw = await redis.get(`gameState:${roomId}`);
+    if (gameStateRaw) {
+      // Update game state
+      const gameState: TestGameState = JSON.parse(gameStateRaw);
+      gameState.turn += 1;
+      gameState.jobId = undefined;
+      // Set game state
+      await redis.set(`gameState:${roomId}`, JSON.stringify(gameState));
       // Update channel
       await redisPub.publish(
         `channel:gameState:${roomId}`,
-        JSON.stringify(parsedGameState)
+        JSON.stringify(gameState)
       );
-      console.log('Turn updated for room:', roomId);
+      console.log(
+        `Turn updated for room:${roomId} at ${new Date().toLocaleTimeString()}`
+      );
     }
   },
   { connection: redis }

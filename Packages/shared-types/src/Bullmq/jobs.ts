@@ -1,4 +1,5 @@
 export interface TestGameState {
+  jobId?: string;
   turn: number;
   roomId: string;
 }
