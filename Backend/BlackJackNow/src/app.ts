@@ -6,7 +6,7 @@ import swaggerDocs from './configs/swaggerConfig';
 import rootRouter from './routes/root';
 import dotenv from 'dotenv';
 import { createContext } from './context';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { createServer } from 'http';
 import { firebaseAuthApi, firebaseAuthSocket } from './middleware/firebaseAuth';
 import { Queue } from 'bullmq';
@@ -88,14 +88,19 @@ context.redisSub.subscribe(`channel:gameStateUpdates`, (err) => {
   console.log(`Subscribed to channel:gameStateUpdates`);
 });
 
+interface CustomSocket extends Socket {
+  roomId?: string;
+}
+
 io.on('connection', async (socket) => {
   console.log('A user connected:', socket.id);
+
   socket.on('joinRoom', async (data) => {
     console.log('Joining room:', data.roomId);
     // join room
     socket.join(data.roomId);
     // Store the room ID inside socket.data
-    (socket as any).roomId = data.roomId;
+    (socket as CustomSocket).roomId = data.roomId;
     // start turn
     try {
       await startTurn(data.roomId);
@@ -164,7 +169,7 @@ io.on('connection', async (socket) => {
 
   socket.on('disconnect', async () => {
     console.log('User disconnected:', socket.id);
-    const roomId = (socket as any).roomId; // Retrieve stored room ID
+    const roomId = (socket as CustomSocket).roomId; // Retrieve stored room ID
     if (!roomId) return;
     socket.leave(roomId);
   });

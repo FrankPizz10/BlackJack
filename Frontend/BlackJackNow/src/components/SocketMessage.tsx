@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSocket } from '../customHooks/useSocket';
+import { TestGameState } from '@shared-types/Bullmq/jobs';
 
 const SocketMessage = () => {
   const { socket } = useSocket();
@@ -16,12 +17,12 @@ const SocketMessage = () => {
       console.log('Socket disconnected');
     };
 
-    const onJoinRoom = (data: any) => {
+    const onJoinRoom = (data: TestGameState) => {
       console.log('Joined room:', data.roomId);
       setRoomId(data.roomId);
     };
 
-    const onGameState = (data: any) => {
+    const onGameState = (data: TestGameState) => {
       console.log('Received game state:', data);
     };
 
