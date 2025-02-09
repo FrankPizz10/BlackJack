@@ -27,7 +27,7 @@
     "ci:shared-types": "cd Packages/shared-types && npm run ci",
     "ci:frontend": "cd Frontend/BlackJackNow && npm run ci",
     "ci:backend": "cd Backend/BlackJackNow && npm run ci",
-    "start:docker": "docker compose up --build -d",
+    "start:docker": "docker compose up --build --watch",
     "start:docker:nomiddleware": "DISABLE_MIDDLEWARE=true docker compose up --build -d",
     "stop:docker": "docker compose stop",
     "clean:docker": "docker image prune --force",

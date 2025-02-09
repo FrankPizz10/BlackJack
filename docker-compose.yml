@@ -59,7 +59,18 @@ services:
       - '3000:3000'
     depends_on:
       - backend
-    command: ['serve', '-s', 'dist']
+      - firebase
+      - redis
+      - postgres
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./Frontend/BlackJackNow/src
+          target: /app/Frontend/BlackJackNow/src
+          ignore:
+            - node_modules
+            - dist
+    command: ['npm', 'run', 'dev']
     container_name: frontend
   redis:
     image: redis/redis-stack:7.4.0-v2
