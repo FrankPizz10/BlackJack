@@ -1,39 +1,79 @@
-// import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSocket } from '../customHooks/useSocket';
 
 const SocketMessage = () => {
   const { socket } = useSocket();
-  // const [message, setMessage] = useState('');
+  const [roomId, setRoomId] = useState('');
+  const [input, setInput] = useState('');
+
+  useEffect(() => {
+    if (!socket) return;
+    const onConnect = () => {
+      console.log('Socket connected');
+    };
+
+    const onDisconnect = () => {
+      console.log('Socket disconnected');
+    };
+
+    const onJoinRoom = (data: any) => {
+      console.log('Joined room:', data.roomId);
+      setRoomId(data.roomId);
+    };
+
+    const onGameState = (data: any) => {
+      console.log('Received game state:', data);
+    };
+
+    socket.on('connect', onConnect);
+
+    socket.on('disconnect', onDisconnect);
+
+    socket.on('joinRoom', onJoinRoom);
+
+    socket.on('gameState', onGameState);
+
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('joinRoom', onJoinRoom);
+      socket.off('gameState', onGameState);
+    };
+  }, [socket]);
 
   if (!socket) {
-    return <div>Loading...</div>;
+    return <div>Socket is not connected</div>;
   }
 
-  // socket.on('connect', () => {
-  //   console.log('Connected to server');
-  // });
+  const joinRoom = (roomId: string) => {
+    socket.emit('joinRoom', { roomId });
+    setRoomId(roomId);
+  };
 
-  // socket.on('disconnect', () => {
-  //   console.log('Disconnected from server');
-  // });
-
-  // socket.on('message', (data) => {
-  //   console.log('Received message:', data);
-  //   setMessage(data);
-  // });
-
-  // Print all socket events
-  socket.onAny((eventName, ...args) => {
-    console.log(eventName, args);
-  });
+  const takeAction = () => {
+    socket.emit('takeAction', { roomId });
+  };
 
   return (
     <div>
-      {socket?.connected ? 'Connected' : 'Disconnected'}
-      {/* <p>{message}</p> */}
-      <button onClick={() => socket?.emit('takeAction', { roomId: socket.id })}>
-        Send message
-      </button>
+      {roomId && (
+        <>
+          <p>Joined room: {roomId}</p>
+          <button onClick={() => takeAction()}>Take Action</button>
+        </>
+      )}
+      {!roomId && (
+        <>
+          <p>Please enter a room ID:</p>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+          />
+          <br />
+          <button onClick={() => joinRoom(input)}>Join Room</button>
+        </>
+      )}
     </div>
   );
 };

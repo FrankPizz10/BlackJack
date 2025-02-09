@@ -52,6 +52,7 @@ const turnQueue = new Queue('turnQueue', { connection: context.redis });
 
 const startTurn = async (roomId: string): Promise<void> => {
   if (!roomId) return;
+  console.log('Starting turn for room:', roomId);
   try {
     const existingJob = await turnQueue.getJob(roomId);
     if (existingJob) {
@@ -70,7 +71,7 @@ const startTurn = async (roomId: string): Promise<void> => {
         delay: TURN_TIME_LIMIT,
         removeOnComplete: true,
         removeOnFail: true,
-        jobId: roomId,
+        jobId: String(roomId),
       }
     );
   } catch (err) {
@@ -89,24 +90,32 @@ context.redisSub.subscribe(`channel:gameStateUpdates`, (err) => {
 
 io.on('connection', async (socket) => {
   console.log('A user connected:', socket.id);
-  // join room
-  socket.join(socket.id);
-  // start turn
-  try {
-    await startTurn(socket.id);
-  } catch (err) {
-    console.error('Error starting turn job:', err);
-  }
-  // update redis game state
-  try {
-    const gameState: TestGameState = { turn: 0, roomId: socket.id };
-    context.redis.set(`gameState:${socket.id}`, JSON.stringify(gameState));
-    if (!gameState.roomId) return;
-    // broadcast game state
-    io.to(socket.id).emit('gameState', gameState);
-  } catch (err) {
-    console.error('Error updating game state:', err);
-  }
+  socket.on('joinRoom', async (data) => {
+    console.log('Joining room:', data.roomId);
+    // join room
+    socket.join(data.roomId);
+    // Store the room ID inside socket.data
+    (socket as any).roomId = data.roomId;
+    // start turn
+    try {
+      await startTurn(data.roomId);
+    } catch (err) {
+      console.error('Error starting turn job:', err);
+    }
+    // update redis game state
+    try {
+      const gameState: TestGameState = { turn: 0, roomId: data.roomId };
+      if (!gameState.roomId) return;
+      await context.redis.set(
+        `gameState:${data.roomId}`,
+        JSON.stringify(gameState)
+      );
+      // broadcast game state
+      io.to(data.roomId).emit('gameState', gameState);
+    } catch (err) {
+      console.error('Error updating game state:', err);
+    }
+  });
 
   socket.on('takeAction', async (data) => {
     console.log('Action received:', data);
@@ -155,21 +164,9 @@ io.on('connection', async (socket) => {
 
   socket.on('disconnect', async () => {
     console.log('User disconnected:', socket.id);
-
-    const gameStateRaw = await context.redis.get(`gameState:${socket.id}`);
-    if (gameStateRaw) {
-      const gameState: TestGameState = JSON.parse(gameStateRaw);
-      if (gameState.roomId) {
-        const job = await turnQueue.getJob(gameState.roomId);
-        if (job) await job.remove();
-      }
-    }
-
-    // Remove Redis game state
-    await context.redis.del(`gameState:${socket.id}`);
-
-    // Unsubscribe
-    await context.redisSub.unsubscribe(`channel:gameState:${socket.id}`);
+    const roomId = (socket as any).roomId; // Retrieve stored room ID
+    if (!roomId) return;
+    socket.leave(roomId);
   });
 });
 
