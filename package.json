@@ -32,7 +32,7 @@
     "stop:docker": "docker compose stop",
     "clean:docker": "docker image prune --force",
     "prisma:migrate": "cd Backend/BlackJackNow && npm run prisma:migrate",
-    "test": "cd Backend/BlackJackNow && npm run test"
+    "test": "docker compose -f docker-compose.test.yml up --build -d"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

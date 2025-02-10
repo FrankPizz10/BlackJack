@@ -9,6 +9,7 @@ import { createContext } from './context';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import { firebaseAuthApi, firebaseAuthSocket } from './middleware/firebaseAuth';
+// import { Queue } from 'bullmq';
 
 dotenv.config();
 
@@ -46,8 +47,25 @@ if (process.env.DISABLE_MIDDLEWARE !== 'true') {
   io.use(firebaseAuthSocket);
 }
 
+// const turnQueue = new Queue('turnQueue', { connection: context.redis });
+
+// let timers = new Map<string, NodeJS.Timeout>();
+// const resetTime = 60 * 1000; // 1 minute
+
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
+
+  // const startTimer = () => {
+  //   const timer = setTimeout(() => {
+  //     io.to(socket.id).emit('timer reset');
+  //     startTimer(); // Restart the timer after sending the event
+  //   }, resetTime / 10); // 10 secs
+
+  //   timers.set(socket.id, timer);
+  // };
+
+  // // Start the repeating timer
+  // startTimer();
 
   socket.on('message', (data) => {
     console.log('Message received:', data);

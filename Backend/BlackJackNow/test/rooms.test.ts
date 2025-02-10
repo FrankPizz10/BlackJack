@@ -1,7 +1,7 @@
 import roomsRouter from '../src/routes/rooms';
 import { getRoomsController } from '../src/controllers/roomsController';
 import { getRooms } from '../src/services/roomsService';
-import mockContext from './mocks/mockContext';
+import { mockContext } from './mocks/mockContext';
 import { Request, Response } from 'express';
 import request from 'supertest';
 import { AppContext } from '../src/context';
@@ -29,8 +29,10 @@ describe('Rooms API', () => {
   describe('Rooms Service', () => {
     it('Should return a list of rooms', async () => {
       // Mock the context
-      mockContext.prisma.rooms.findMany.mockResolvedValue(rooms);
-      mockContext.redis.get.mockResolvedValue(JSON.stringify(rooms));
+      (mockContext.prisma.rooms.findMany as jest.Mock).mockResolvedValue(rooms);
+      (mockContext.redis.get as jest.Mock).mockResolvedValue(
+        JSON.stringify(rooms)
+      );
       await expect(getRooms(mockContext)).resolves.toEqual({
         roomsDb: rooms,
         roomsCache: JSON.stringify(rooms),
@@ -41,8 +43,10 @@ describe('Rooms API', () => {
   describe('Rooms Controller', () => {
     it('Should return a list of rooms', async () => {
       // Mock the context for the controller
-      mockContext.prisma.rooms.findMany.mockResolvedValue(rooms);
-      mockContext.redis.get.mockResolvedValue(JSON.stringify(rooms));
+      (mockContext.prisma.rooms.findMany as jest.Mock).mockResolvedValue(rooms);
+      (mockContext.redis.get as jest.Mock).mockResolvedValue(
+        JSON.stringify(rooms)
+      );
 
       const req = {} as Request; // Create a mock request object
       const res = {

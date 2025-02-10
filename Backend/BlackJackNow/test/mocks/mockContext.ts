@@ -1,51 +1,36 @@
 import { PrismaClient } from '@prisma/client';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
-import { RedisClientType } from 'redis';
+import Redis from 'ioredis';
 import { createContext } from '../../src/context';
 
+// Ensure Prisma is fully mocked
 jest.mock('@prisma/client', () => ({
   __esModule: true,
   PrismaClient: jest.fn(() => mockDeep<PrismaClient>()),
 }));
 
-jest.mock('redis', () => {
-  const mockRedisClient = {
-    connect: jest.fn(),
-    disconnect: jest.fn(),
-    get: jest.fn(),
-    set: jest.fn(),
-    del: jest.fn(),
-    quit: jest.fn(),
-  };
-  return {
-    createClient: jest.fn(() => mockRedisClient),
-  };
+// Mock Redis completely
+jest.mock('ioredis', () => {
+  const mockRedisClient = mockDeep<Redis>();
+  return jest.fn(() => mockRedisClient);
 });
 
 afterEach(() => {
-  jest.clearAllMocks(); // Clears all mocks after each test
+  jest.clearAllMocks();
 });
 
-afterAll(async () => {
-  jest.resetAllMocks(); // Resets all mocks after all tests
-  if (mockContext.redis.quit) {
-    await mockContext.redis.quit();
-  }
+afterAll(() => {
+  jest.resetAllMocks();
 });
 
-// Create a mock context for testing
-const context = createContext();
-const prismaMock = context.prisma as unknown as DeepMockProxy<PrismaClient>;
-const redisMock = context.redis as unknown as DeepMockProxy<RedisClientType>;
+// Create mock instances
+const prismaMock = new PrismaClient() as unknown as DeepMockProxy<PrismaClient>;
+const redisMock = new Redis() as unknown as DeepMockProxy<Redis>;
 
-type MockContext = {
-  prisma: DeepMockProxy<PrismaClient>;
-  redis: DeepMockProxy<RedisClientType>;
-};
-
-const mockContext: MockContext = {
+// Create a test context
+export const mockContext = createContext({
   prisma: prismaMock,
   redis: redisMock,
-};
+});
 
-export default mockContext;
+export type MockContext = typeof mockContext;

@@ -1,21 +1,24 @@
 import { PrismaClient } from '@prisma/client';
-import { createClient, RedisClientType } from 'redis';
+import Redis from 'ioredis';
 
 type Context = {
   prisma: PrismaClient;
-  redis: RedisClientType;
+  redis: Redis;
 };
 
 const prisma = new PrismaClient();
-const redis: RedisClientType = createClient({
-  url: process.env.REDIS_URL,
-});
 
-redis.connect();
+const redisUrl = process.env.REDIS_URL;
 
-export const createContext = (): Context => ({
-  prisma,
-  redis,
+if (!redisUrl) {
+  throw new Error('REDIS_URL is not defined');
+}
+
+const redis = new Redis(redisUrl);
+
+export const createContext = (overrides?: Partial<Context>): Context => ({
+  prisma: overrides?.prisma || prisma,
+  redis: overrides?.redis || redis,
 });
 
 export type AppContext = ReturnType<typeof createContext>;
