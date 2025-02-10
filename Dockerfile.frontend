@@ -49,4 +49,4 @@ RUN npm run prepare:docker
 EXPOSE 3000
 
 # Start the app
-CMD [ "serve", "-s", "dist" ]
+CMD [ "npm", "run", "dev" ]

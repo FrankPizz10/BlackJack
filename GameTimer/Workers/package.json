@@ -1,0 +1,30 @@
+{
+  "name": "gametimer",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "ts-node src/worker.ts",
+    "build": "tsc",
+    "build:workers": "npm install && npm run build",
+    "build:shared": "cd ../../Packages/shared-types && npm run buildInstall",
+    "prepare:docker": "npm run build:shared && npm run build:workers",
+    "dockercmd": "npm run start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/ioredis": "^4.28.10",
+    "@types/node": "^22.13.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "bullmq": "^5.40.0",
+    "dotenv": "^16.4.7",
+    "ioredis": "^5.4.2"
+  }
+}
+

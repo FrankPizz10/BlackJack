@@ -30,6 +30,15 @@ services:
       DISABLE_MIDDLEWARE: ${DISABLE_MIDDLEWARE}
     command: ['npm', 'run', 'dockercmd']
     container_name: backend
+  queueWorker:
+    image: blackjacknow-queue:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment:
+      REDIS_URL: ${REDIS_URL}
+    command: ['npm', 'run', 'dockercmd']
+    container_name: queue-worker
   frontend:
     image: blackjacknow-frontend:latest
     build:
@@ -50,10 +59,21 @@ services:
       - '3000:3000'
     depends_on:
       - backend
-    command: ['serve', '-s', 'dist']
+      - firebase
+      - redis
+      - postgres
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./Frontend/BlackJackNow/src
+          target: /app/Frontend/BlackJackNow/src
+          ignore:
+            - node_modules
+            - dist
+    command: ['npm', 'run', 'dev']
     container_name: frontend
   redis:
-    image: redis/redis-stack:6.2.6-v18
+    image: redis/redis-stack:7.4.0-v2
     container_name: redis-stack
     ports:
       - '6379:6379' # Redis port

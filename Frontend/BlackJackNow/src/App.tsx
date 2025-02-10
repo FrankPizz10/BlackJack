@@ -2,7 +2,7 @@ import reactLogo from './assets/react.svg';
 import viteLogo from '/vite.svg';
 import './App.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import RoomDisplay from './components/roomDisplay';
+// import RoomDisplay from './components/roomDisplay';
 import { SocketProvider } from './providers/Socketprovider';
 import SocketMessage from './components/SocketMessage';
 import { auth } from './services/auth/firebaseAuthConfig';
@@ -41,9 +41,9 @@ function App() {
             <img src={reactLogo} className="logo react" alt="React logo" />
           </a>
         </div>
-        <h1>Vite + React</h1>
+        <h1>Vite + React + LIVE!🔥</h1>
         <div className="card">
-          <RoomDisplay />
+          {/* <RoomDisplay /> */}
           <SocketMessage />
         </div>
         <p className="read-the-docs">
