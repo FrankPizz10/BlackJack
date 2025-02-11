@@ -21,7 +21,7 @@ export type GameState = {
 
 // Helper method to check eligible actions for a Seat
 export const check_eligible_action = (seat: Seat): Action[] => {
-  const hand = seat.hands.find(h => h.is_current_hand);
+  const hand = seat.hands.find((h) => h.is_current_hand);
   if (!hand) return [];
 
   const total = computeHandCount(hand.cards);
@@ -44,9 +44,10 @@ export const check_eligible_action = (seat: Seat): Action[] => {
   }
 
   // Allow Double Down if the hand total is 9, 10, 11 (without an Ace) or 16-18 (with an Ace) and the player has enough stack
-  const hasAce = hand.cards.some(card => card.card === 'A');
+  const hasAce = hand.cards.some((card) => card.card === 'A');
   if (
-    ((!hasAce && [9, 10, 11].includes(total)) || (hasAce && [16, 17, 18].includes(total))) &&
+    ((!hasAce && [9, 10, 11].includes(total)) ||
+      (hasAce && [16, 17, 18].includes(total))) &&
     seat.player.stack >= hand.bet
   ) {
     actions.push('Double Down');
@@ -58,9 +59,9 @@ export const check_eligible_action = (seat: Seat): Action[] => {
 // Helper method to handle Dealer action
 const handleDealer = (gs: GameState): boolean => {
   let dealerTotal = computeHandCount(gs.dealerHand);
-  let hasAce = gs.dealerHand.some(card => card.card === 'A');
+  let hasAce = gs.dealerHand.some((card) => card.card === 'A');
   const deck = gs.deck;
-  
+
   while (dealerTotal <= 16 || (dealerTotal === 17 && hasAce)) {
     const card = draw(deck);
     if (card) {
@@ -68,18 +69,22 @@ const handleDealer = (gs: GameState): boolean => {
       gs.deck = { ...gs.deck, currentDeck: deck.currentDeck };
     }
     dealerTotal = computeHandCount(gs.dealerHand);
-    hasAce = gs.dealerHand.some(card => card.card === 'A');
+    hasAce = gs.dealerHand.some((card) => card.card === 'A');
   }
   return false;
 };
 
 // Helper method to check the outcome of a hand
-const handleCheckHand = (gs: GameState, seat: number, current_hand: number): boolean => {
+const handleCheckHand = (
+  gs: GameState,
+  seat: number,
+  current_hand: number
+): boolean => {
   const hand = gs.seats[seat].hands[current_hand];
   const dealerTotal = computeHandCount(gs.dealerHand);
   const playerTotal = computeHandCount(hand.cards);
   const hasWon = playerTotal >= dealerTotal;
-  
+
   if (gs.seats[seat].hands.length > current_hand + 1) {
     gs.seats[seat].hands[current_hand + 1].is_current_hand = true;
     gs.seats[seat].player.stack += hasWon ? 2 * hand.bet : 0;
@@ -98,7 +103,11 @@ const handleCheckHand = (gs: GameState, seat: number, current_hand: number): boo
 };
 
 // Helper method for "Hit"
-const handleHit = (gs: GameState, seat: number, current_hand: number): boolean => {
+const handleHit = (
+  gs: GameState,
+  seat: number,
+  current_hand: number
+): boolean => {
   const deck = gs.deck;
   const hand = gs.seats[seat].hands[current_hand];
   const card = draw(deck);
@@ -118,7 +127,11 @@ const handleHit = (gs: GameState, seat: number, current_hand: number): boolean =
 };
 
 // Helper method for "Stay"
-const handleStay = (gs: GameState, seat: number, current_hand: number): boolean => {
+const handleStay = (
+  gs: GameState,
+  seat: number,
+  current_hand: number
+): boolean => {
   const hand = gs.seats[seat].hands[current_hand];
   hand.is_done = true;
   gs.seats[seat].hands[current_hand] = hand;
@@ -126,7 +139,11 @@ const handleStay = (gs: GameState, seat: number, current_hand: number): boolean 
 };
 
 // Helper method for "Double Down"
-const handleDoubleDown = (gs: GameState, seat: number, current_hand: number): boolean => {
+const handleDoubleDown = (
+  gs: GameState,
+  seat: number,
+  current_hand: number
+): boolean => {
   const deck = gs.deck;
   const hand = gs.seats[seat].hands[current_hand];
   const card = draw(deck);
@@ -144,7 +161,11 @@ const handleDoubleDown = (gs: GameState, seat: number, current_hand: number): bo
 };
 
 // Helper method for "Split"
-const handleSplit = (gs: GameState, seat: number, current_hand: number): boolean => {
+const handleSplit = (
+  gs: GameState,
+  seat: number,
+  current_hand: number
+): boolean => {
   const hand = gs.seats[seat].hands[current_hand];
   gs.seats[seat].hands.splice(current_hand, 1);
 

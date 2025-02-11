@@ -80,4 +80,9 @@ describe('Rooms API', () => {
       expect(response.status).toBe(200); // Verify HTTP status code
     });
   });
+  describe('Failed Test', () => {
+    it('Should fail to test ci pipeline', () => {
+      expect(true).toBe(false);
+    });
+  });
 });
