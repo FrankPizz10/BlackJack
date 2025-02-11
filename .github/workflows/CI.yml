@@ -6,6 +6,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      PORT: 4003
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      REDIS_URL: ${{ vars.REDIS_URL }}
+      NODE_ENV: ${{ vars.NODE_ENV }}
+
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js
