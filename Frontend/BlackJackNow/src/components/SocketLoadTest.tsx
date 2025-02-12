@@ -10,7 +10,10 @@ const SocketMessage = () => {
 
   const connectClient = async (roomId: number) => {
     return new Promise((resolve) => {
-      const socket = io(import.meta.env.VITE_SERVER_URL);
+      const socket = io(import.meta.env.VITE_SERVER_URL, {
+        reconnectionAttempts: 3,
+        reconnectionDelay: 1000,
+      });
 
       socket.on('connect', () => {
         console.log('Socket connected');
@@ -38,15 +41,14 @@ const SocketMessage = () => {
 
   const startLoadTest = async () => {
     console.log('Starting Load Test...');
-    const promisedClients = [];
     // connect to i rooms with j players
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 20; i++) {
       for (let j = 0; j < 7; j++) {
-        promisedClients.push(connectClient(i));
+        connectClient(i);
+        // Add a delay between connections
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
-
-    await Promise.all(promisedClients);
 
     console.log('All Clients Connected!');
   };

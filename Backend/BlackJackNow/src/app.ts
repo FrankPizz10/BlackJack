@@ -10,6 +10,7 @@ import { createServer } from 'http';
 import { firebaseAuthApi, firebaseAuthSocket } from './middleware/firebaseAuth';
 import { Queue } from 'bullmq';
 import { initializeSockets } from './sockets';
+import socketRouter from './routes/socket';
 
 dotenv.config();
 
@@ -28,6 +29,8 @@ app.use('/api/rooms', roomsRouter(context));
 const turnQueue = new Queue('turnQueue', { connection: context.redis });
 
 const io = initializeSockets(httpServer, context, turnQueue);
+
+app.use('/dev/socket', socketRouter(io));
 
 // Enable Swagger UI only in development
 if (process.env.NODE_ENV === 'development') {
