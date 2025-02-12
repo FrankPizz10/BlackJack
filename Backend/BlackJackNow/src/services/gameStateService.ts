@@ -6,6 +6,8 @@ export const startTurn = async (
   turnQueue: Queue
 ): Promise<void> => {
   if (!roomId) return;
+  // check if room id can be parsed as an int
+  if (!isNaN(parseInt(roomId))) return;
   console.log('Starting turn for room:', roomId);
   try {
     const existingJob = await turnQueue.getJob(roomId);

@@ -12,6 +12,7 @@ import {
   signInAnonymously,
   UserCredential,
 } from 'firebase/auth';
+import SocketLoadTest from './components/SocketLoadTest';
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ function App() {
         <h1>Vite + React + LIVE!🔥</h1>
         <div className="card">
           {/* <RoomDisplay /> */}
+          <SocketLoadTest />
           <SocketMessage />
         </div>
         <p className="read-the-docs">
