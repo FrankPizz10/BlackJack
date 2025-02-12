@@ -4,7 +4,7 @@ export type Action =
   | 'Stand'
   | 'Double Down'
   | 'Split'
-  | 'Surrender' 
+  | 'Surrender'
   | 'Deal'
   | 'Dealer'
   | 'CheckHand'

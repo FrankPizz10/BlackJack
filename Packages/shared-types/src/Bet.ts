@@ -1,4 +1,4 @@
 export type Bet = {
-    betAmount: number;
-    bettingSeat: number;
-  };
+  betAmount: number;
+  bettingSeat: number;
+};
