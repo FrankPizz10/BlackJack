@@ -1,4 +1,3 @@
-import { TestGameState } from '@shared-types/Bullmq/jobs';
 import { Server } from 'socket.io';
 import { AppContext } from '../context';
 import { startTurn } from '../services/gameStateService';

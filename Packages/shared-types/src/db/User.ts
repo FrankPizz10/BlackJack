@@ -10,4 +10,3 @@ export const createUserSchema = z.object({
 });
 
 export type DbUser = z.infer<typeof userSchema>;
-

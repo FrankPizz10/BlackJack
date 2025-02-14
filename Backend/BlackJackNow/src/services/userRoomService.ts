@@ -16,4 +16,3 @@ export const createUserRoom = async (
   });
   return userRoom;
 };
-

@@ -1,8 +1,7 @@
 import { AppContext } from '../context';
 import { RoomData } from '@shared-types/RoomsSchema';
-import crypto from 'crypto';
+import { generateRoomUrl } from '../utils/crypto';
 import { createGameTable } from './gameTableService';
-import { createUserRoom } from './userRoomService';
 
 export const getRooms = async (context: AppContext) => {
   try {
@@ -28,7 +27,7 @@ export const createRoom = async (context: AppContext, roomData?: RoomData) => {
       // Generate a unique URL
       let isUnique = false;
       while (!isUnique) {
-        url = crypto.randomBytes(4).toString('hex'); // Generates an 8-character hex string
+        url = generateRoomUrl();
         const existingRoom = await context.prisma.rooms.findUnique({
           where: { url },
         });

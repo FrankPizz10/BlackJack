@@ -17,4 +17,3 @@ export const createUserRoomSchema = z.object({
 
 export type UserRoom = z.infer<typeof userRoomSchema>;
 export type CreateUserRoom = z.infer<typeof createUserRoomSchema>;
-

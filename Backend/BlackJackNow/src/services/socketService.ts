@@ -13,4 +13,3 @@ export const getUniqueSocketRoomCount = (io: Server) => {
 
   return roomIds.size;
 };
-

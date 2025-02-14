@@ -14,4 +14,3 @@ export const createGameTable = async (context: AppContext) => {
     throw error;
   }
 };
-
