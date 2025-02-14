@@ -1,5 +1,8 @@
 import { AppContext } from '../context';
 import { RoomData } from '@shared-types/RoomsSchema';
+import crypto from 'crypto';
+import { createGameTable } from './gameTableService';
+import { createUserRoom } from './userRoomService';
 
 export const getRooms = async (context: AppContext) => {
   try {
@@ -12,36 +15,39 @@ export const getRooms = async (context: AppContext) => {
   }
 };
 
-export const createRoom = async (context: AppContext, roomData: RoomData) => {
+export const createRoom = async (context: AppContext, roomData?: RoomData) => {
   try {
+    let url = roomData?.url ?? '';
+    let gameTableId = roomData?.gameTableId;
+
+    if (!url || !gameTableId) {
+      // Generate a game table if not provided
+      const { gameTableDb } = await createGameTable(context);
+      gameTableId = gameTableDb.id;
+
+      // Generate a unique URL
+      let isUnique = false;
+      while (!isUnique) {
+        url = crypto.randomBytes(4).toString('hex'); // Generates an 8-character hex string
+        const existingRoom = await context.prisma.rooms.findUnique({
+          where: { url },
+        });
+        if (!existingRoom) {
+          isUnique = true;
+        }
+      }
+    }
+
     const roomDb = await context.prisma.rooms.create({
       data: {
-        url: roomData.url,
-        gameTableId: roomData.gameTableId,
-        roomOpenTime: roomData.roomOpenTime,
-        roomCloseTime: roomData.roomCloseTime,
-        maxRoomSize: roomData.maxRoomSize,
+        url,
+        gameTableId,
+        roomOpenTime: roomData?.roomOpenTime ?? new Date(),
+        roomCloseTime: roomData?.roomCloseTime ?? null,
+        maxRoomSize: roomData?.maxRoomSize ?? 15,
       },
     });
-    const roomsCache = await context.redis.get('rooms');
-    if (roomsCache) {
-      try {
-        const parsedRooms = JSON.parse(roomsCache);
-
-        // Ensure parsedRooms is an array; if it's an object, wrap it in an array
-        const updatedRooms = Array.isArray(parsedRooms)
-          ? [...parsedRooms, roomData]
-          : [parsedRooms, roomData];
-
-        await context.redis.set('rooms', JSON.stringify(updatedRooms));
-      } catch (error) {
-        console.error('Error parsing roomsCache:', error);
-      }
-    } else {
-      // Initialize cache with the first room inside an array
-      await context.redis.set('rooms', JSON.stringify([roomData]));
-    }
-    return { roomDb, roomsCache };
+    return { roomDb };
   } catch (error) {
     console.error('Error creating room:', error);
     throw error;

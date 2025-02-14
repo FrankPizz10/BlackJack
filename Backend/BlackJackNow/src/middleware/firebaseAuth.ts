@@ -53,7 +53,7 @@ export const firebaseAuthSocket = (
     .auth()
     .verifyIdToken(token)
     .then((decodedToken) => {
-      socket.data.user = decodedToken; // Store user data in socket instance
+      socket.data.userUid = decodedToken.uid; // Store user data in socket instance
       next(); // Proceed to the next middleware
     })
     .catch((error) => {

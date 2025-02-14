@@ -30,6 +30,7 @@ export const startTurn = async (
         jobId: String(roomId),
       }
     );
+    console.log(`Turn started for room: ${roomId}`);
   } catch (err) {
     console.error('Error starting turn job:', err);
     throw 'Error starting turn job';

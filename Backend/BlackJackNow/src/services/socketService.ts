@@ -6,8 +6,8 @@ export const getUniqueSocketRoomCount = (io: Server) => {
 
   io.sockets.sockets.forEach((socket) => {
     const customSocket = socket as CustomSocket; // Type assertion
-    if (customSocket.roomId) {
-      roomIds.add(customSocket.roomId); // Collect unique room IDs
+    if (customSocket.roomUrl) {
+      roomIds.add(customSocket.roomUrl); // Collect unique room IDs
     }
   });
 

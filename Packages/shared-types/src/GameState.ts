@@ -247,3 +247,32 @@ export const take_action = (gs: GameState, action: Action): GameState => {
 
   return gs;
 };
+
+export const createNewGameState = (
+  roomDb: { id: number; gameTableId: number },
+  socketData: { userId: number; userRoomDbId: number }
+): GameState => {
+  return {
+    rommDbId: roomDb.id,
+    gameTableDbId: roomDb.gameTableId,
+    dealerHand: [],
+    seats: [
+      {
+        hands: [],
+        seat_turn: true,
+        is_afk: false,
+        player: {
+          user_ID: socketData.userId,
+          stack: 100,
+          userRoomDbId: socketData.userRoomDbId,
+          gameTableDbId: roomDb.gameTableId,
+        },
+      },
+    ],
+    roundOver: false,
+    timeToAct: 20,
+    timeToBet: 15,
+    deck: { currentDeck: [], baseDeck: [], numDecks: 1 },
+    bet: null,
+  };
+};

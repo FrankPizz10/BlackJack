@@ -6,7 +6,7 @@ import { subscribeToRedisChannel } from './redisSub';
 import { Queue } from 'bullmq';
 
 export interface CustomSocket extends Socket {
-  roomId?: string;
+  roomUrl?: string;
 }
 
 export const initializeSockets = (
@@ -21,13 +21,19 @@ export const initializeSockets = (
   });
 
   io.on('connection', async (socket) => {
-    console.log('A user connected:', socket.id);
-
-    registerSocketEvents(io, socket, context, turnQueue);
+    console.log('A user connected:', socket.data.userUid);
+    // Create user
+    const user = await context.prisma.users.upsert({
+      where: { uid: socket.data.userUid },
+      update: { uid: socket.data.userUid },
+      create: { uid: socket.data.userUid },
+    });
+    console.log('User created:', user);
+    registerSocketEvents(io, socket, context, turnQueue, user);
 
     socket.on('disconnect', async () => {
       console.log('User disconnected:', socket.id);
-      const roomId = (socket as CustomSocket).roomId; // Retrieve stored room ID
+      const roomId = (socket as CustomSocket).roomUrl; // Retrieve stored room ID
       if (!roomId) return;
       socket.leave(roomId);
     });
