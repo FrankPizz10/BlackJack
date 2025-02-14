@@ -7,13 +7,15 @@ import { Queue } from 'bullmq';
 import { createRoom } from '../services/roomsService';
 import { createNewGameState } from '@shared-types/GameState';
 import { createUserRoom } from '../services/userRoomService';
+import { DbUser } from '@shared-types/db/User';
+import { createUserRoomSchema } from '@shared-types/db/UserRoom';
 
 export const registerSocketEvents = (
   io: Server,
   socket: Socket,
   context: AppContext,
   turnQueue: Queue,
-  user: { id: number; uid: string }
+  user: DbUser
 ) => {
   socket.on('createRoom', async () => {
     console.log('Creating new room:');
@@ -22,13 +24,18 @@ export const registerSocketEvents = (
       const { roomDb } = await createRoom(context);
       console.log('Room created:', roomDb);
       if (!roomDb) return;
-      const userRoom = await createUserRoom(
-        context,
-        user.id,
-        roomDb.id,
-        true,
-        socket.id
-      );
+      const userRoomData = {
+        userId: user.id,
+        roomId: roomDb.id,
+        host: true,
+        name: socket.id,
+      };
+      const result = createUserRoomSchema.safeParse(userRoomData);
+      if (!result.success) {
+        console.error('Invalid user room data:', userRoomData);
+        return;
+      }
+      const userRoom = await createUserRoom(context, userRoomData);
       console.log('User room created:', userRoom);
       // join room
       socket.join(roomDb.url);

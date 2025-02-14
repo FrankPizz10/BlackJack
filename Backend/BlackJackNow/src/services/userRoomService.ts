@@ -1,16 +1,15 @@
-import { AppContext } from 'src/context';
+import { AppContext } from '../context';
+import { CreateUserRoom } from '@shared-types/db/UserRoom';
 
 export const createUserRoom = async (
   context: AppContext,
-  userId: number,
-  roomId: number,
-  host: boolean,
-  name: string
+  createUserRoom: CreateUserRoom
 ) => {
+  const { roomId, userId, host, name } = createUserRoom;
   const userRoom = await context.prisma.user_Room.create({
     data: {
-      userId,
       roomId,
+      userId,
       host,
       name,
     },
