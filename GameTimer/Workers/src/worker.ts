@@ -1,7 +1,7 @@
 import { QueueEvents, Worker } from 'bullmq';
 import Redis from 'ioredis';
 import dotenv from 'dotenv';
-import { TestGameState } from '@shared-types/Bullmq/jobs';
+import { GameState } from '@shared-types/GameState';
 
 dotenv.config();
 
@@ -17,27 +17,30 @@ const redisPub = redis.duplicate();
 
 new Worker(
   'turnQueue',
-  async (job): Promise<TestGameState | undefined> => {
+  async (job): Promise<GameState | undefined> => {
     try {
-      const { roomId } = job.data;
-      console.log('Turn started for room:', roomId);
+      const { roomUrl } = job.data;
+      console.log('Turn started for room:', roomUrl);
 
       // Get game state
-      const gameStateRaw = await redis.get(`gameState:${roomId}`);
+      const gameStateRaw = await redis.get(`gameState:${roomUrl}`);
       if (!gameStateRaw) {
         console.error('Game state invalid or missing');
         return undefined;
       }
 
-      // Update game state
-      const gameState: TestGameState = JSON.parse(gameStateRaw);
-      gameState.turn += 1;
+      // Parse game state
+      const gameState: GameState = JSON.parse(gameStateRaw);
+      if (!gameState) {
+        console.error('Game state invalid');
+        return undefined;
+      }
 
       // Set game state
-      await redis.set(`gameState:${roomId}`, JSON.stringify(gameState));
+      await redis.set(`gameState:${roomUrl}`, JSON.stringify(gameState));
 
       console.log(
-        `Turn updated for room:${roomId} at ${new Date().toLocaleTimeString()}`
+        `Turn updated for room:${roomUrl} at ${new Date().toLocaleTimeString()}`
       );
 
       return gameState;
@@ -66,9 +69,9 @@ queueEvents.on('completed', async ({ jobId, returnvalue }) => {
 
   try {
     // Parse return value
-    const gameState = returnvalue as unknown as TestGameState;
+    const gameState = returnvalue as unknown as GameState;
 
-    console.log(`Parsed game state for room:${gameState.roomId}`);
+    console.log(`Parsed game state for room:${gameState.rommDbId}`);
 
     await redisPub.publish(
       `channel:gameStateUpdates`,

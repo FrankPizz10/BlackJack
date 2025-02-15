@@ -2,23 +2,23 @@ import { TURN_TIME_LIMIT } from '@shared-types/Bullmq/jobs';
 import { Queue } from 'bullmq';
 
 export const startTurn = async (
-  roomId: string,
+  roomUrl: string,
   turnQueue: Queue
 ): Promise<void> => {
-  if (!roomId) {
+  if (!roomUrl) {
     console.error('Room ID is missing');
     return;
   }
   // check if room id can be parsed as an int
-  if (!isNaN(parseInt(roomId))) {
+  if (!isNaN(parseInt(roomUrl))) {
     console.error('Room ID is not a string');
     return;
   }
-  console.log('Starting turn for room:', roomId);
+  console.log('Starting turn for room:', roomUrl);
   try {
-    const existingJob = await turnQueue.getJob(roomId);
+    const existingJob = await turnQueue.getJob(roomUrl);
     if (existingJob) {
-      console.log(`Job already exists for room: ${roomId}, skipping new job.`);
+      console.log(`Job already exists for room: ${roomUrl}, skipping new job.`);
       return;
     }
   } catch (err) {
@@ -28,15 +28,15 @@ export const startTurn = async (
   try {
     await turnQueue.add(
       'turn',
-      { roomId },
+      { roomUrl: roomUrl },
       {
         delay: TURN_TIME_LIMIT,
         removeOnComplete: true,
         removeOnFail: true,
-        jobId: String(roomId),
+        jobId: String(roomUrl),
       }
     );
-    console.log(`Turn started for room: ${roomId}`);
+    console.log(`Turn started for room: ${roomUrl}`);
   } catch (err) {
     console.error('Error starting turn job:', err);
     throw 'Error starting turn job';

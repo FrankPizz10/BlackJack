@@ -35,6 +35,7 @@ const TestGame = () => {
   const startGame = async () => {
     if (!roomData || !userRoomData) return;
     const startGame: StartGame = { roomDb: roomData, userRoomDb: userRoomData };
+    console.log('Starting game: ', startGame);
     socket.emit('startGame', startGame);
   };
 

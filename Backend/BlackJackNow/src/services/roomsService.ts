@@ -25,6 +25,7 @@ export const createRoom = async (
     if (!url || !gameTableId) {
       // Generate a game table if not provided
       const { gameTableDb } = await createGameTable(context);
+      console.log('Game table created:', gameTableDb);
       gameTableId = gameTableDb.id;
 
       // Generate a unique URL
@@ -39,7 +40,7 @@ export const createRoom = async (
         }
       }
     }
-
+    console.log('Room URL:', url);
     const roomDb = await context.prisma.rooms.create({
       data: {
         url,
@@ -49,6 +50,7 @@ export const createRoom = async (
         maxRoomSize: roomData?.maxRoomSize ?? 15,
       },
     });
+    console.log('Room created:', roomDb);
     return { roomDb };
   } catch (error) {
     console.error('Error creating room:', error);

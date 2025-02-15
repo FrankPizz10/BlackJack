@@ -20,7 +20,6 @@ export const handleCreateRoom = async (
   // create room
   try {
     const { roomDb } = await createRoom(context);
-    console.log('Room created:', roomDb);
     if (!roomDb) return;
     const userRoomData = {
       userId: user.id,
@@ -36,6 +35,7 @@ export const handleCreateRoom = async (
     const userRoom = await createUserRoom(context, userRoomData);
     console.log('User room created:', userRoom);
     // join room
+    console.log('Joining room:', roomDb.url);
     socket.join(roomDb.url);
     const startGame: StartGame = { roomDb, userRoomDb: userRoom };
     io.to(socket.id).emit('roomCreated', startGame);

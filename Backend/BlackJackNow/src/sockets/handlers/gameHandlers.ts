@@ -16,7 +16,7 @@ export const startGame = async (
   try {
     const gameState = createNewGameState(startGame);
     await context.redis.set(
-      `gameState:${startGame.roomDb.id}`,
+      `gameState:${startGame.roomDb.url}`,
       JSON.stringify(gameState)
     );
     // broadcast game state

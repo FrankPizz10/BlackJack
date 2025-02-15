@@ -35,7 +35,7 @@ export const initializeSockets = (
     // Create user
     const user = await context.prisma.users.upsert({
       where: { uid: createUserData.uid },
-      update: { uid: createUserData.uid },
+      update: {},
       create: { uid: createUserData.uid },
     });
     console.log('User created:', user);
