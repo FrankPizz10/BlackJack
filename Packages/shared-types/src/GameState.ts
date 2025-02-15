@@ -2,6 +2,7 @@ import { Card } from './Card';
 import { Deck, draw } from './Deck';
 import { Hand, computeHandCount } from './Hand';
 import { Seat } from './Seat';
+import { ActionType } from './ActionType';
 import { Action } from './Action';
 import { Bet } from './Bet';
 import { StartGame } from './db/Game';
@@ -17,16 +18,27 @@ export type GameState = {
   timeToAct: number;
   timeToBet: number;
   deck: Deck;
-  bet: Bet | null;
+  action: Action;
+  shuffle: boolean;
+};
+
+const drawCard = (deck: Deck, gs: GameState): Card | null => {
+  let card = draw(deck);
+  if (card && card.suit === 'CUT') {
+    gs.shuffle = true;
+    card = draw(deck);
+  }
+  return card;
 };
 
 // Helper method to check eligible actions for a Seat
-export const check_eligible_action = (seat: Seat): Action[] => {
+export const check_eligible_action = (gs: GameState): ActionType[] => {
+  const seat = gs.seats[gs.seats.findIndex((s) => s.seat_turn)];
   const hand = seat.hands.find((h) => h.is_current_hand);
   if (!hand) return [];
 
   const total = computeHandCount(hand.cards);
-  const actions: Action[] = [];
+  const actions: ActionType[] = [];
 
   if (total === 21) return actions; // No actions allowed if hand is 21
 
@@ -58,13 +70,13 @@ export const check_eligible_action = (seat: Seat): Action[] => {
 };
 
 // Helper method to handle Dealer action
-const handleDealer = (gs: GameState): boolean => {
+export const handleDealer = (gs: GameState): boolean => {
   let dealerTotal = computeHandCount(gs.dealerHand);
   let hasAce = gs.dealerHand.some((card) => card.card === 'A');
   const deck = gs.deck;
 
   while (dealerTotal <= 16 || (dealerTotal === 17 && hasAce)) {
-    const card = draw(deck);
+    const card = drawCard(deck, gs);
     if (card) {
       gs.dealerHand.push(card);
       gs.deck = { ...gs.deck, currentDeck: deck.currentDeck };
@@ -76,7 +88,7 @@ const handleDealer = (gs: GameState): boolean => {
 };
 
 // Helper method to check the outcome of a hand
-const handleCheckHand = (
+export const handleCheckHand = (
   gs: GameState,
   seat: number,
   current_hand: number
@@ -104,15 +116,10 @@ const handleCheckHand = (
 };
 
 // Helper method for "Hit"
-const handleHit = (
-  gs: GameState,
-  seat: number,
-  current_hand: number
-): boolean => {
+export const handleHit = (gs: GameState, seat: number, current_hand: number): boolean => {
   const deck = gs.deck;
   const hand = gs.seats[seat].hands[current_hand];
-  const card = draw(deck);
-
+  const card = drawCard(deck, gs);
   if (card) {
     hand.cards.push(card);
     gs.deck = { ...gs.deck, currentDeck: deck.currentDeck };
@@ -122,13 +129,11 @@ const handleHit = (
   if (count >= 21) {
     hand.is_done = true;
   }
-
-  gs.seats[seat].hands[current_hand] = hand;
   return hand.is_done;
 };
 
 // Helper method for "Stay"
-const handleStay = (
+export const handleStay = (
   gs: GameState,
   seat: number,
   current_hand: number
@@ -140,29 +145,22 @@ const handleStay = (
 };
 
 // Helper method for "Double Down"
-const handleDoubleDown = (
-  gs: GameState,
-  seat: number,
-  current_hand: number
-): boolean => {
+export const handleDoubleDown = (gs: GameState, seat: number, current_hand: number): boolean => {
   const deck = gs.deck;
   const hand = gs.seats[seat].hands[current_hand];
-  const card = draw(deck);
-
+  const card = drawCard(deck, gs);
   if (card) {
     hand.cards.push(card);
     gs.deck = { ...gs.deck, currentDeck: deck.currentDeck };
   }
-
   hand.is_done = true;
   hand.bet *= 2;
   gs.seats[seat].player.stack -= hand.bet / 2;
-  gs.seats[seat].hands[current_hand] = hand;
   return true;
 };
 
 // Helper method for "Split"
-const handleSplit = (
+export const handleSplit = (
   gs: GameState,
   seat: number,
   current_hand: number
@@ -190,25 +188,26 @@ const handleSplit = (
 };
 
 // Helper method to handle Bet action
-const handleBet = (gs: GameState): boolean => {
-  if (!gs.bet) return false;
+export const handleBet = (gs: GameState): boolean => {
+  if (!gs.action.bet) return false;
 
-  gs.seats[gs.bet.bettingSeat].hands[0].bet = gs.bet.betAmount;
+  gs.seats[gs.action.bet.bettingSeat].hands[0].bet = gs.action.bet.betAmount;
 
   return false;
 };
 
 // Main method: take_action
-export const take_action = (gs: GameState, action: Action): GameState => {
+export const take_action = (gs: GameState): GameState => {
   const seat = gs.seats.findIndex((s) => s.seat_turn);
   if (seat === -1) return gs; // No active seat
+  const action = gs.action;
 
   const current_hand = gs.seats[seat].hands.findIndex((h) => h.is_current_hand);
   if (current_hand === -1) return gs; // No current hand
 
   let is_done = false;
 
-  switch (action) {
+  switch (action.actionType) {
     case 'Bet':
       is_done = handleBet(gs);
       break;
@@ -233,6 +232,9 @@ export const take_action = (gs: GameState, action: Action): GameState => {
     case 'Dealer':
       is_done = handleDealer(gs);
       break;
+    case 'ForceShuffle':
+      gs.shuffle = true;
+      break
   }
 
   if (is_done) {
