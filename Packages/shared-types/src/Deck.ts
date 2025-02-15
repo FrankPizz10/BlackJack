@@ -30,22 +30,31 @@ export const generateBaseDeck = (): Card[] => {
 };
 
 export const createDeck = (numDecks: number = 1): Deck => {
-  const baseDeck = Array(numDecks)
-    .fill(null)
-    .flatMap(() => generateBaseDeck());
+  let baseDeck = Array(numDecks).fill(null).flatMap(() => generateBaseDeck());
+  
+  // Insert the cut card at a random position
+  const cutCard: Card = { suit: 'CUT', card: '1', faceUp: false };
+  const randomIndex = Math.floor(Math.random() * (baseDeck.length + 1));
+  baseDeck.splice(randomIndex, 0, cutCard);
+  
   return { baseDeck, currentDeck: [...baseDeck], numDecks };
 };
 
 export const shuffle = (deck: Deck): void => {
-  for (let i = deck.currentDeck.length - 1; i > 0; i--) {
+  for (let i = deck.baseDeck.length - 1; i > 0; i--) {
     const randomIndex = Math.floor(Math.random() * (i + 1));
-    [deck.currentDeck[i], deck.currentDeck[randomIndex]] = [
-      deck.currentDeck[randomIndex],
-      deck.currentDeck[i],
+    [deck.baseDeck[i], deck.baseDeck[randomIndex]] = [
+      deck.baseDeck[randomIndex],
+      deck.baseDeck[i],
     ];
   }
+  deck.currentDeck = [...deck.baseDeck];
 };
 
 export const draw = (deck: Deck): Card | null => {
-  return deck.currentDeck.length > 0 ? deck.currentDeck.shift() || null : null;
+  if (deck.currentDeck.length === 0) {
+    return null;
+  }
+  const drawnCard = deck.currentDeck.shift(); // Removes the top card from currentDeck
+  return drawnCard || null; // Ensures null is returned if shift() somehow fails
 };
