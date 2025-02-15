@@ -18,7 +18,7 @@ export const joinRoomSchema = z.object({
   roomUrl: z.string().min(1, 'URL is required'),
 });
 
-export const getRoomsSchema = z.array(roomsCreateSchema);
+export const getRoomsSchema = z.array(roomSchema);
 
 export type CreateRoomData = z.infer<typeof roomsCreateSchema>;
 export type RoomData = z.infer<typeof roomSchema>;
