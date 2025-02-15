@@ -14,10 +14,15 @@ export const roomsCreateSchema = z.object({
 
 export const roomSchema = roomsCreateSchema.extend({ id: z.number().int() });
 
+export const joinRoomSchema = z.object({
+  roomUrl: z.string().min(1, 'URL is required'),
+});
+
 export const getRoomsSchema = z.array(roomsCreateSchema);
 
 export type CreateRoomData = z.infer<typeof roomsCreateSchema>;
 export type RoomData = z.infer<typeof roomSchema>;
+export type JoinRoom = z.infer<typeof joinRoomSchema>;
 
 export type groupedRoomData = {
   roomsDb: CreateRoomData[];

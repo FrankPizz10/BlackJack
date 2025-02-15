@@ -9,4 +9,3 @@ export const startGameSchema = z.object({
 });
 
 export type StartGame = z.infer<typeof startGameSchema>;
-

@@ -5,10 +5,12 @@ import { CustomSocket } from '../index';
 import { AppContext } from '../../context';
 import { createRoom } from '../../services/roomsService';
 import { createUserRoom } from '../../services/userRoomService';
-import { startTurn } from '../../services/gameStateService';
-import { createUserRoomSchema } from '@shared-types/db/UserRoom';
-import { TestGameState } from '@shared-types/Bullmq/jobs';
+import {
+  CreateUserRoom,
+  createUserRoomSchema,
+} from '@shared-types/db/UserRoom';
 import { StartGame } from '@shared-types/db/Game';
+import { JoinRoom } from '@shared-types/db/Room';
 
 export const handleCreateRoom = async (
   io: Server,
@@ -21,7 +23,7 @@ export const handleCreateRoom = async (
   try {
     const { roomDb } = await createRoom(context);
     if (!roomDb) return;
-    const userRoomData = {
+    const userRoomData: CreateUserRoom = {
       userId: user.id,
       roomId: roomDb.id,
       host: true,
@@ -50,28 +52,42 @@ export const handleJoinRoom = async (
   io: Server,
   socket: Socket,
   context: AppContext,
-  turnQueue: Queue,
-  data: { url: string }
+  user: DbUser,
+  joinRoomData: JoinRoom
 ) => {
-  if (!data.url) return;
-  console.log('Joining room:', data.url);
-  // join room
-  socket.join(data.url);
-  // Store the room ID inside socket.data
-  (socket as CustomSocket).roomUrl.add(data.url);
-  // start turn
-  try {
-    await startTurn(data.url, turnQueue);
-  } catch (err) {
-    console.error('Error starting turn job:', err);
+  if (!joinRoomData.roomUrl) return;
+  // Check if room is full
+  const roomWithSize = await context.prisma.rooms.findUniqueOrThrow({
+    where: { url: joinRoomData.roomUrl },
+    include: {
+      _count: {
+        select: { UserRoom: true },
+      },
+    },
+  });
+  const roomsize = roomWithSize._count.UserRoom;
+  if (roomsize >= 12) {
+    console.log('Room is full');
+    socket.emit('error', 'Room is full');
+    return;
   }
+  console.log('Joining room:', joinRoomData.roomUrl);
+  // create user room
+  const userRoomData: CreateUserRoom = {
+    userId: user.id,
+    roomId: roomWithSize.id,
+    host: false,
+    name: socket.id,
+  };
+  const userRoom = await createUserRoom(context, userRoomData);
+  // join room
+  socket.join(joinRoomData.roomUrl);
+  // Store the room ID inside socket.data
+  (socket as CustomSocket).roomUrl.add(joinRoomData.roomUrl);
   // update redis game state
   try {
-    const gameState: TestGameState = { turn: 0, roomId: data.url };
-    if (!gameState.roomId) return;
-    await context.redis.set(`gameState:${data.url}`, JSON.stringify(gameState));
-    // broadcast game state
-    io.to(data.url).emit('gameState', gameState);
+    // broadcast player joined room
+    io.to(joinRoomData.roomUrl).emit('roomJoined', userRoom);
   } catch (err) {
     console.error('Error updating game state:', err);
   }

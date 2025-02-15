@@ -4,8 +4,6 @@ import { Hand, computeHandCount } from './Hand';
 import { Seat } from './Seat';
 import { Action } from './Action';
 import { Bet } from './Bet';
-import { RoomData } from './db/Room';
-import { UserRoom } from './db/UserRoom';
 import { StartGame } from './db/Game';
 
 // GameState.ts will be stored in Redis Cache

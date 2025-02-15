@@ -8,11 +8,17 @@ import { StartGame } from '@shared-types/db/Game';
 
 export const startGame = async (
   io: Server,
+  socket: Socket,
   context: AppContext,
   turnQueue: Queue,
   startGame: StartGame
 ) => {
   console.log('Starting game...');
+  if (!startGame.userRoomDb.host) {
+    console.error('User is not host');
+    socket.emit('error', 'User is not host');
+    return;
+  }
   try {
     const gameState = createNewGameState(startGame);
     await context.redis.set(
