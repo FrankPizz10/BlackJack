@@ -4,6 +4,9 @@ import { Hand, computeHandCount } from './Hand';
 import { Seat } from './Seat';
 import { Action } from './Action';
 import { Bet } from './Bet';
+import { RoomData } from './db/Room';
+import { UserRoom } from './db/UserRoom';
+import { StartGame } from './db/Game';
 
 // GameState.ts will be stored in Redis Cache
 // Redis Key for the Gamestate will look like Game:{roomId}
@@ -248,13 +251,10 @@ export const take_action = (gs: GameState, action: Action): GameState => {
   return gs;
 };
 
-export const createNewGameState = (
-  roomDb: { id: number; gameTableId: number },
-  socketData: { userId: number; userRoomDbId: number }
-): GameState => {
+export const createNewGameState = (startGame: StartGame): GameState => {
   return {
-    rommDbId: roomDb.id,
-    gameTableDbId: roomDb.gameTableId,
+    rommDbId: startGame.roomDb.id,
+    gameTableDbId: startGame.roomDb.gameTableId,
     dealerHand: [],
     seats: [
       {
@@ -262,10 +262,10 @@ export const createNewGameState = (
         seat_turn: true,
         is_afk: false,
         player: {
-          user_ID: socketData.userId,
+          user_ID: startGame.userRoomDb.userId,
           stack: 100,
-          userRoomDbId: socketData.userRoomDbId,
-          gameTableDbId: roomDb.gameTableId,
+          userRoomDbId: startGame.roomDb.id,
+          gameTableDbId: startGame.roomDb.gameTableId,
         },
       },
     ],

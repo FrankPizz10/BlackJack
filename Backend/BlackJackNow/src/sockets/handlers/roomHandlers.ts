@@ -2,19 +2,18 @@ import { Server, Socket } from 'socket.io';
 import { Queue } from 'bullmq';
 import { DbUser } from '@shared-types/db/User';
 import { CustomSocket } from '../index';
-import { createNewGameState } from '@shared-types/GameState';
 import { AppContext } from '../../context';
 import { createRoom } from '../../services/roomsService';
 import { createUserRoom } from '../../services/userRoomService';
 import { startTurn } from '../../services/gameStateService';
 import { createUserRoomSchema } from '@shared-types/db/UserRoom';
 import { TestGameState } from '@shared-types/Bullmq/jobs';
+import { StartGame } from '@shared-types/db/Game';
 
 export const handleCreateRoom = async (
   io: Server,
   socket: Socket,
   context: AppContext,
-  turnQueue: Queue,
   user: DbUser
 ) => {
   console.log('Creating new room:');
@@ -38,27 +37,10 @@ export const handleCreateRoom = async (
     console.log('User room created:', userRoom);
     // join room
     socket.join(roomDb.url);
-    io.to(socket.id).emit('roomCreated', { roomDb, userRoom });
-    // Store the room ID inside socket.data
-    (socket as CustomSocket).roomUrl = roomDb.url;
-    // start turn
-    try {
-      await startTurn(roomDb.url, turnQueue);
-    } catch (err) {
-      console.error('Error starting turn job:', err);
-    }
-    // update redis game state
-    try {
-      const gameState = createNewGameState(roomDb, socket.data);
-      await context.redis.set(
-        `gameState:${roomDb.url}`,
-        JSON.stringify(gameState)
-      );
-      // broadcast game state
-      io.to(roomDb.url).emit('gameState', gameState);
-    } catch (err) {
-      console.error('Error updating game state:', err);
-    }
+    const startGame: StartGame = { roomDb, userRoomDb: userRoom };
+    io.to(socket.id).emit('roomCreated', startGame);
+    // Store the room url inside socket.data
+    (socket as CustomSocket).roomUrl.add(roomDb.url);
   } catch (err) {
     console.error('Error creating room:', err);
   }
@@ -76,7 +58,7 @@ export const handleJoinRoom = async (
   // join room
   socket.join(data.url);
   // Store the room ID inside socket.data
-  (socket as CustomSocket).roomUrl = data.url;
+  (socket as CustomSocket).roomUrl.add(data.url);
   // start turn
   try {
     await startTurn(data.url, turnQueue);

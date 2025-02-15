@@ -7,7 +7,7 @@ import { Queue } from 'bullmq';
 import { createUserSchema } from '@shared-types/db/User';
 
 export interface CustomSocket extends Socket {
-  roomUrl?: string;
+  roomUrl: Set<string>; // Store the room url inside socket.data
 }
 
 export const initializeSockets = (
@@ -43,9 +43,9 @@ export const initializeSockets = (
 
     socket.on('disconnect', async () => {
       console.log('User disconnected:', socket.id);
-      const roomId = (socket as CustomSocket).roomUrl; // Retrieve stored room ID
-      if (!roomId) return;
-      socket.leave(roomId);
+      const roomUrl = (socket as CustomSocket).roomUrl; // Retrieve stored room url
+      if (!roomUrl) return;
+      // TODO: Remove user from all rooms they were in
     });
   });
 

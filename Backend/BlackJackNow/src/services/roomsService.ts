@@ -1,5 +1,5 @@
+import { CreateRoomData } from '@shared-types/db/Room';
 import { AppContext } from '../context';
-import { RoomData } from '@shared-types/RoomsSchema';
 import { generateRoomUrl } from '../utils/crypto';
 import { createGameTable } from './gameTableService';
 
@@ -14,7 +14,10 @@ export const getRooms = async (context: AppContext) => {
   }
 };
 
-export const createRoom = async (context: AppContext, roomData?: RoomData) => {
+export const createRoom = async (
+  context: AppContext,
+  roomData?: CreateRoomData
+) => {
   try {
     let url = roomData?.url ?? '';
     let gameTableId = roomData?.gameTableId;

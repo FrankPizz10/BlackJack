@@ -1,8 +1,36 @@
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { AppContext } from '../../context';
 import { Queue } from 'bullmq';
 import { TestGameState } from '@shared-types/Bullmq/jobs';
 import { startTurn } from '../../services/gameStateService';
+import { createNewGameState } from '@shared-types/GameState';
+import { StartGame } from '@shared-types/db/Game';
+
+export const startGame = async (
+  io: Server,
+  context: AppContext,
+  turnQueue: Queue,
+  startGame: StartGame
+) => {
+  console.log('Starting game...');
+  try {
+    const gameState = createNewGameState(startGame);
+    await context.redis.set(
+      `gameState:${startGame.roomDb.id}`,
+      JSON.stringify(gameState)
+    );
+    // broadcast game state
+    io.to(startGame.roomDb.url).emit('gameState', gameState);
+    // start turn
+    try {
+      await startTurn(startGame.roomDb.url, turnQueue);
+    } catch (err) {
+      console.error('Error starting turn job:', err);
+    }
+  } catch (err) {
+    console.error('Error updating game state:', err);
+  }
+};
 
 export const handleTakeAction = async (
   io: Server,
