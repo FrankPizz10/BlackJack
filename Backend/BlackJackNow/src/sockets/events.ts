@@ -6,6 +6,7 @@ import { handleCreateRoom, handleJoinRoom } from './handlers/roomHandlers';
 import { handleTakeAction, startGame } from './handlers/gameHandlers';
 import { StartGame, startGameSchema } from '@shared-types/db/Game';
 import { JoinRoom, joinRoomSchema } from '@shared-types/db/Room';
+import { ActionEvent } from '@shared-types/Action';
 
 export const registerSocketEvents = (
   io: Server,
@@ -33,7 +34,7 @@ export const registerSocketEvents = (
     }
     handleJoinRoom(io, socket, context, user, data);
   });
-  socket.on('takeAction', (data: { url: string }) => {
+  socket.on('takeAction', (data: ActionEvent) => {
     handleTakeAction(io, context, turnQueue, data);
   });
 };

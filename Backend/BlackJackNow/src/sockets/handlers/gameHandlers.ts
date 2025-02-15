@@ -3,8 +3,15 @@ import { AppContext } from '../../context';
 import { Queue } from 'bullmq';
 import { TestGameState } from '@shared-types/Bullmq/jobs';
 import { startTurn } from '../../services/gameStateService';
-import { createNewGameState } from '@shared-types/GameState';
+import {
+  createNewGameState,
+  dealCards,
+  GameState,
+  handleBet,
+  takeAction,
+} from '@shared-types/GameState';
 import { StartGame } from '@shared-types/db/Game';
+import { ActionEvent, Action } from '@shared-types/Action';
 
 export const startGame = async (
   io: Server,
@@ -25,6 +32,8 @@ export const startGame = async (
       `gameState:${startGame.roomDb.url}`,
       JSON.stringify(gameState)
     );
+    // Broadcast game started
+    io.to(startGame.roomDb.url).emit('gameStarted');
     // broadcast game state
     io.to(startGame.roomDb.url).emit('gameState', gameState);
     // start turn
@@ -42,46 +51,75 @@ export const handleTakeAction = async (
   io: Server,
   context: AppContext,
   turnQueue: Queue,
-  data: { url: string }
+  actionEvent: ActionEvent
 ) => {
-  console.log('Action received:', data);
+  console.log('Action received:', actionEvent);
 
-  if (!data.url) return; // Early return if roomId is missing
+  if (!actionEvent.roomUrl) return; // Early return if roomId is missing
 
   try {
     // Get and parse game state
-    const gameStateRaw = await context.redis.get(`gameState:${data.url}`);
+    const gameStateRaw = await context.redis.get(
+      `gameState:${actionEvent.roomUrl}`
+    );
     if (!gameStateRaw) return console.error('Game state not found');
 
-    const gameState: TestGameState = JSON.parse(gameStateRaw);
+    const gameState: GameState = JSON.parse(gameStateRaw);
     console.log('Action Game state:', gameState);
     if (!gameState) return console.error('Game state invalid');
     // Update game state
-    gameState.turn += 1;
+    const action: Action = {
+      actionType: actionEvent.actionType,
+      bet: actionEvent.bet,
+    };
+    const newGameState = takeAction(gameState, action);
     // Remove old job from queue
-    const job = await turnQueue.getJob(gameState.roomId);
+    const job = await turnQueue.getJob(actionEvent.roomUrl);
     console.log('Found job:', job);
     if (job) await job.remove();
-
-    // Start a new turn job
-    try {
-      await startTurn(gameState.roomId, turnQueue);
-    } catch (err) {
-      console.error('Error starting turn job:', err);
-      return;
-    }
 
     // Update Redis game state
     try {
       await context.redis.set(
-        `gameState:${gameState.roomId}`,
-        JSON.stringify(gameState)
+        `gameState:${actionEvent.roomUrl}`,
+        JSON.stringify(newGameState)
       );
 
       // Broadcast updated game state
-      io.to(gameState.roomId).emit('gameState', gameState);
+      io.to(actionEvent.roomUrl).emit('gameState', newGameState);
     } catch (err) {
       console.error('Error updating game state:', err);
+    }
+
+    // Check if all hands have bet and cards have not been dealt yet
+    if (
+      newGameState.seats.every((seat) =>
+        seat.hands.every((hand) => hand.bet > 0 && hand.cards.length < 1)
+      )
+    ) {
+      // Broadcast bets have been placed
+      io.to(actionEvent.roomUrl).emit('betsPlaced');
+
+      // Deal cards
+      try {
+        const dealtGameState = dealCards(newGameState);
+        await context.redis.set(
+          `gameState:${actionEvent.roomUrl}`,
+          JSON.stringify(dealtGameState)
+        );
+        io.to(actionEvent.roomUrl).emit('cardsDealt');
+        io.to(actionEvent.roomUrl).emit('gameState', newGameState);
+      } catch (err) {
+        console.error('Error dealing cards:', err);
+      }
+    }
+
+    // Start a new turn job
+    try {
+      await startTurn(actionEvent.roomUrl, turnQueue);
+    } catch (err) {
+      console.error('Error starting turn job:', err);
+      return;
     }
   } catch (err) {
     console.error('Error handling takeAction:', err);

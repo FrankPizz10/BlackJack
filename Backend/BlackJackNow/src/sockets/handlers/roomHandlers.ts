@@ -10,6 +10,7 @@ import {
 } from '@shared-types/db/UserRoom';
 import { StartGame } from '@shared-types/db/Game';
 import { JoinRoom } from '@shared-types/db/Room';
+import { createUserSeat } from '../../services/userSeatService';
 
 export const handleCreateRoom = async (
   io: Server,
@@ -35,10 +36,16 @@ export const handleCreateRoom = async (
     }
     const userRoom = await createUserRoom(context, userRoomData);
     console.log('User room created:', userRoom);
+    const userSeat = await createUserSeat(context, userRoom);
+    console.log('User seat created:', userSeat);
     // join room
     console.log('Joining room:', roomDb.url);
     socket.join(roomDb.url);
-    const startGame: StartGame = { roomDb, userRoomDb: userRoom };
+    const startGame: StartGame = {
+      roomDb,
+      userRoomDb: userRoom,
+      userSeatDb: userSeat,
+    };
     io.to(socket.id).emit('roomCreated', startGame);
     // Store the room url inside socket.data
     (socket as CustomSocket).roomUrl.add(roomDb.url);

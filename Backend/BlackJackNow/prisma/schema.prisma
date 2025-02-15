@@ -50,11 +50,11 @@ model Game_Table {
 model Seats {
   id          Int         @id @default(autoincrement())
   position    Int
-  userTableId Int         @unique
+  userRoomId Int         @unique
   handsPlayed Int?
   handsWon    Int?
   blackjacks  Int?
-  userTable   User_Room   @relation(fields: [userTableId], references: [id])
+  userTable   User_Room   @relation(fields: [userRoomId], references: [id])
 }
 
 model User_Room {
