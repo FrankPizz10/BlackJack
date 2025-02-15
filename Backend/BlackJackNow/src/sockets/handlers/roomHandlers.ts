@@ -1,5 +1,4 @@
 import { Server, Socket } from 'socket.io';
-import { Queue } from 'bullmq';
 import { DbUser } from '@shared-types/db/User';
 import { CustomSocket } from '../index';
 import { AppContext } from '../../context';
