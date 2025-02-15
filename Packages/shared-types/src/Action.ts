@@ -1,11 +1,7 @@
-export type Action =
-  | 'None'
-  | 'Hit'
-  | 'Stand'
-  | 'Double Down'
-  | 'Split'
-  | 'Surrender'
-  | 'Deal'
-  | 'Dealer'
-  | 'CheckHand'
-  | 'Bet';
+import { ActionType } from './ActionType';
+import { Bet } from './Bet';
+
+export type Action = {
+  actionType: ActionType;
+  bet: Bet;
+};
