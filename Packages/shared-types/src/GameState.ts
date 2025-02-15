@@ -187,7 +187,7 @@ export const handleSplit = (
 
 // Helper method to handle Bet action
 export const handleBet = (gs: GameState): boolean => {
-  if (!gs.action) return false;
+  if (!gs.action.bet) return false;
 
   gs.seats[gs.action.bet.bettingSeat].hands[0].bet = gs.action.bet.betAmount;
 
