@@ -60,4 +60,3 @@ const socketRouter = (io: Server): Router => {
 };
 
 export default socketRouter;
-

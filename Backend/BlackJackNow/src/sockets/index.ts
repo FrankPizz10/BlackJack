@@ -4,9 +4,10 @@ import { registerSocketEvents } from './events';
 import { AppContext } from '../context';
 import { subscribeToRedisChannel } from './redisSub';
 import { Queue } from 'bullmq';
+import { createUserSchema } from '@shared-types/db/User';
 
 export interface CustomSocket extends Socket {
-  roomId?: string;
+  roomUrl: Set<string>; // Store the room url inside socket.data
 }
 
 export const initializeSockets = (
@@ -21,15 +22,30 @@ export const initializeSockets = (
   });
 
   io.on('connection', async (socket) => {
-    console.log('A user connected:', socket.id);
-
-    registerSocketEvents(io, socket, context, turnQueue);
+    console.log('A user connected:', socket.data.userUid);
+    // Verify zod schema
+    const createUserData = {
+      uid: socket.data.userUid,
+    };
+    const result = createUserSchema.safeParse(createUserData);
+    if (!result.success) {
+      console.error('Invalid user ID:', createUserData);
+      return;
+    }
+    // Create user
+    const user = await context.prisma.users.upsert({
+      where: { uid: createUserData.uid },
+      update: {},
+      create: { uid: createUserData.uid },
+    });
+    console.log('User created:', user);
+    registerSocketEvents(io, socket, context, turnQueue, user);
 
     socket.on('disconnect', async () => {
       console.log('User disconnected:', socket.id);
-      const roomId = (socket as CustomSocket).roomId; // Retrieve stored room ID
-      if (!roomId) return;
-      socket.leave(roomId);
+      const roomUrl = (socket as CustomSocket).roomUrl; // Retrieve stored room url
+      if (!roomUrl) return;
+      // TODO: Remove user from all rooms they were in
     });
   });
 

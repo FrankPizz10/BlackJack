@@ -1,6 +1,7 @@
 import { ExtendedError, Socket } from 'socket.io';
 import { admin } from '../services/firebaseService';
 import { Request, Response, NextFunction } from 'express';
+import { CustomSocket } from '../sockets/index';
 
 const retrieveToken = (req: Request): string | null => {
   const authHeader = req.headers.authorization;
@@ -53,7 +54,11 @@ export const firebaseAuthSocket = (
     .auth()
     .verifyIdToken(token)
     .then((decodedToken) => {
-      socket.data.user = decodedToken; // Store user data in socket instance
+      socket.data.userUid = decodedToken.uid; // Store user data in socket instance
+      // Ensure roomUrl is initialized before using .add()
+      if (!(socket as CustomSocket).roomUrl) {
+        (socket as CustomSocket).roomUrl = new Set();
+      }
       next(); // Proceed to the next middleware
     })
     .catch((error) => {

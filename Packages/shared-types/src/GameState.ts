@@ -4,6 +4,7 @@ import { Hand, computeHandCount } from './Hand';
 import { Seat } from './Seat';
 import { ActionType } from './ActionType';
 import { Action } from './Action';
+import { StartGame } from './db/Game';
 
 // GameState.ts will be stored in Redis Cache
 // Redis Key for the Gamestate will look like Game:{roomId}
@@ -114,7 +115,11 @@ export const handleCheckHand = (
 };
 
 // Helper method for "Hit"
-export const handleHit = (gs: GameState, seat: number, current_hand: number): boolean => {
+export const handleHit = (
+  gs: GameState,
+  seat: number,
+  current_hand: number
+): boolean => {
   const deck = gs.deck;
   const hand = gs.seats[seat].hands[current_hand];
   const card = drawCard(deck, gs);
@@ -143,7 +148,11 @@ export const handleStay = (
 };
 
 // Helper method for "Double Down"
-export const handleDoubleDown = (gs: GameState, seat: number, current_hand: number): boolean => {
+export const handleDoubleDown = (
+  gs: GameState,
+  seat: number,
+  current_hand: number
+): boolean => {
   const deck = gs.deck;
   const hand = gs.seats[seat].hands[current_hand];
   const card = drawCard(deck, gs);
@@ -232,7 +241,7 @@ export const take_action = (gs: GameState): GameState => {
       break;
     case 'ForceShuffle':
       gs.shuffle = true;
-      break
+      break;
   }
 
   if (is_done) {
@@ -247,4 +256,31 @@ export const take_action = (gs: GameState): GameState => {
   }
 
   return gs;
+};
+
+export const createNewGameState = (startGame: StartGame): GameState => {
+  return {
+    rommDbId: startGame.roomDb.id,
+    gameTableDbId: startGame.roomDb.gameTableId,
+    dealerHand: [],
+    seats: [
+      {
+        hands: [],
+        seat_turn: true,
+        is_afk: false,
+        player: {
+          user_ID: startGame.userRoomDb.userId,
+          stack: 100,
+          userRoomDbId: startGame.roomDb.id,
+          gameTableDbId: startGame.roomDb.gameTableId,
+        },
+      },
+    ],
+    roundOver: false,
+    timeToAct: 20,
+    timeToBet: 15,
+    deck: { currentDeck: [], baseDeck: [], numDecks: 1 },
+    action: { actionType: 'None', bet: null },
+    shuffle: false,
+  };
 };

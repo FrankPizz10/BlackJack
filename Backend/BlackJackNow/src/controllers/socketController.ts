@@ -19,4 +19,3 @@ export const getTotalActiveRooms = (io: Server) => {
     });
   };
 };
-

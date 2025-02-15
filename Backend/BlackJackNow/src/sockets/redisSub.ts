@@ -1,8 +1,8 @@
-import { TestGameState } from '@shared-types/Bullmq/jobs';
 import { Server } from 'socket.io';
 import { AppContext } from '../context';
 import { startTurn } from '../services/gameStateService';
 import { Queue } from 'bullmq';
+import { GameState } from '@shared-types/GameState';
 
 export const subscribeToRedisChannel = (
   io: Server,
@@ -20,18 +20,20 @@ export const subscribeToRedisChannel = (
   context.redisSub.on('message', async (channel, message) => {
     // check if message is from gameState channel
     if (channel === 'channel:gameStateUpdates') {
-      const gameState: TestGameState = JSON.parse(message);
+      const gameState: GameState = JSON.parse(message);
       console.log('Subscriber received message:', gameState);
-      if (!gameState.roomId) return;
+      const roomDb = await context.prisma.rooms.findUniqueOrThrow({
+        where: { id: gameState.rommDbId },
+      });
       // start new job
       try {
-        await startTurn(gameState.roomId, turnQueue);
+        await startTurn(roomDb.url, turnQueue);
       } catch (err) {
         console.error('Error starting turn job:', err);
         return;
       }
       // broadcast game state
-      io.to(gameState.roomId).emit('gameState', gameState);
+      io.to(roomDb.url).emit('gameState', gameState);
     }
   });
 };

@@ -6,6 +6,7 @@ import { Request, Response } from 'express';
 import request from 'supertest';
 import { AppContext } from '../src/context';
 import express, { Express } from 'express';
+import { generateRoomUrl } from '../src/utils/crypto';
 
 describe('Rooms API', () => {
   const rooms = [
@@ -78,6 +79,16 @@ describe('Rooms API', () => {
       // Verify the route returns a valid response
       const response = await request(app).get('/api/rooms');
       expect(response.status).toBe(200); // Verify HTTP status code
+    });
+  });
+
+  describe('Generate Room URL', () => {
+    it('Should generate a valid room URL', () => {
+      // Generate 10 room URLs
+      const roomUrls = Array.from({ length: 10 }, () => generateRoomUrl());
+      // Check if all room URLs are valid
+      const validRoomUrls = roomUrls.every((url) => !isNaN(parseInt(url)));
+      expect(validRoomUrls).toBe(false); // Verify all URLs are valid
     });
   });
 });

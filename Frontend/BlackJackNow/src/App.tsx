@@ -4,7 +4,7 @@ import './App.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // import RoomDisplay from './components/roomDisplay';
 import { SocketProvider } from './providers/Socketprovider';
-import SocketMessage from './components/SocketMessage';
+// import SocketMessage from './components/SocketMessage';
 import { auth } from './services/auth/firebaseAuthConfig';
 import { useEffect, useState } from 'react';
 import {
@@ -12,7 +12,8 @@ import {
   signInAnonymously,
   UserCredential,
 } from 'firebase/auth';
-import SocketLoadTest from './components/SocketLoadTest';
+import TestGame from './components/TestGame';
+// import SocketLoadTest from './components/SocketLoadTest';
 
 const queryClient = new QueryClient();
 
@@ -45,8 +46,9 @@ function App() {
         <h1>Vite + React + LIVE!🔥</h1>
         <div className="card">
           {/* <RoomDisplay /> */}
-          <SocketLoadTest />
-          <SocketMessage />
+          {/* <SocketLoadTest />
+          <SocketMessage /> */}
+          <TestGame />
         </div>
         <p className="read-the-docs">
           Click on the Vite and React logos to learn more

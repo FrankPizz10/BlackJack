@@ -1,7 +1,7 @@
 import { AppContext } from '../context';
 import { createRoom, getRooms } from '../services/roomsService';
 import { Request, Response } from 'express';
-import { roomsCreateSchema, getRoomsSchema } from '@shared-types/RoomsSchema';
+import { roomsCreateSchema, getRoomsSchema } from '@shared-types/db/Room';
 import { ZodError } from 'zod';
 
 export const getRoomsController = (context: AppContext) => {

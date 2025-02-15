@@ -22,6 +22,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
           auth: { token },
         });
 
+        newSocket.on('connect', () => {
+          console.log('Connected to socket.io');
+        });
+
+        newSocket.on('error', (error) => {
+          console.error('Socket error:', error);
+        });
+
         setSocket(newSocket);
       } catch (error) {
         console.error('Error getting Firebase token:', error);

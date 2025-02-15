@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchRooms } from '../services/api/roomsRequests';
-import { RoomData, groupedRoomData } from '@shared-types/RoomsSchema';
+import { RoomData, groupedRoomData } from '@shared-types/db/Room';
 
 const RoomDisplay = () => {
   const { isLoading, isError, data } = useQuery({
