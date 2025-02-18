@@ -155,6 +155,7 @@ const TestGame = () => {
               }}
             >
               <h2>Dealer Count: {computeHandCount(dealerCards)}</h2>
+              {computeHandCount(dealerCards) > 21 && <h2>Dealer Bust</h2>}
               {dealerCards.map((card, index) => (
                 <div
                   key={card.suit + card.card + index}
@@ -173,6 +174,7 @@ const TestGame = () => {
               }}
             >
               <h2>Player Count: {computeHandCount(userCards)}</h2>
+              {computeHandCount(userCards) > 21 && <h2>Player Bust</h2>}
               {userCards.map((card, index) => (
                 <div
                   key={card.suit + card.card + index}

@@ -3,8 +3,10 @@ import { Card } from './Card';
 export type Hand = {
   cards: Card[];
   bet: number;
-  is_current_hand: boolean;
-  is_done: boolean;
+  isCurrentHand: boolean;
+  isDone: boolean;
+  isWon?: boolean;
+  isPush?: boolean;
 };
 
 export const computeHandCount = (cards: Card[]): number => {

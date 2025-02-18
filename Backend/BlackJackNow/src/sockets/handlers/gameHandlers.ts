@@ -6,7 +6,8 @@ import {
   createNewGameState,
   dealCards,
   GameState,
-  handleBet,
+  removeFaceDownCards,
+  checkDealReady,
   takeAction,
 } from '@shared-types/GameState';
 import { StartGame } from '@shared-types/db/Game';
@@ -74,7 +75,12 @@ export const handleTakeAction = async (
       actionType: actionEvent.actionType,
       bet: actionEvent.bet,
     };
-    const newGameState = takeAction(gameState, action);
+    const { gs: newGameState, actionSuccess } = takeAction(gameState, action);
+    if (!actionSuccess) {
+      console.error('Action failed');
+      io.to(actionEvent.roomUrl).emit('error', 'Action failed');
+      return;
+    }
     // Remove old job from queue
     const job = await turnQueue.getJob(actionEvent.roomUrl);
     console.log('Found job with id:', job?.id);
@@ -88,16 +94,15 @@ export const handleTakeAction = async (
       );
 
       // Broadcast updated game state
-      io.to(actionEvent.roomUrl).emit('gameState', newGameState);
+      io.to(actionEvent.roomUrl).emit(
+        'gameState',
+        removeFaceDownCards(newGameState)
+      );
     } catch (err) {
       console.error('Error updating game state:', err);
     }
     // Check if all hands have bet and cards have not been dealt yet
-    if (
-      newGameState.seats.every((seat) =>
-        seat.hands.every((hand) => hand.bet > 0 && hand.cards.length < 1)
-      )
-    ) {
+    if (checkDealReady(newGameState)) {
       // Broadcast bets have been placed
       io.to(actionEvent.roomUrl).emit('betsPlaced');
 
@@ -111,7 +116,7 @@ export const handleTakeAction = async (
         io.to(actionEvent.roomUrl).emit('cardsDealt');
         io.to(actionEvent.roomUrl).emit(
           'gameState',
-          removeFaceDownCards(newGameState)
+          removeFaceDownCards(dealtGameState)
         );
       } catch (err) {
         console.error('Error dealing cards:', err);
@@ -128,31 +133,4 @@ export const handleTakeAction = async (
   } catch (err) {
     console.error('Error handling takeAction:', err);
   }
-};
-
-// Remove the value of face down cards from gamestate
-const removeFaceDownCards = (gameState: GameState) => {
-  gameState.seats.forEach((seat) => {
-    seat.hands.forEach((hand) => {
-      hand.cards.forEach((card) => {
-        if (!card.faceUp) {
-          card.card = 'HIDDEN';
-          card.suit = 'HIDDEN';
-        }
-      });
-    });
-  });
-  gameState.dealerHand.forEach((card) => {
-    if (!card.faceUp) {
-      card.card = 'HIDDEN';
-      card.suit = 'HIDDEN';
-    }
-  });
-  gameState.deck.currentDeck.forEach((card) => {
-    if (!card.faceUp) {
-      card.card = 'HIDDEN';
-      card.suit = 'HIDDEN';
-    }
-  });
-  return gameState;
 };
