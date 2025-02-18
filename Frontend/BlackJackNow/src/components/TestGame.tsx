@@ -7,6 +7,9 @@ import { JoinRoom } from '@shared-types/db/Room';
 import { ActionEvent } from '@shared-types/Action';
 import { UserSeat } from '@shared-types/db/UserSeat';
 import { ActionType } from '@shared-types/ActionType';
+import { GameState } from '@shared-types/GameState';
+import { Card } from '@shared-types/Card';
+import { computeHandCount } from '@shared-types/Hand';
 
 const TestGame = () => {
   const { socket } = useSocket();
@@ -17,6 +20,8 @@ const TestGame = () => {
   const [betAmount, setBetAmount] = useState(0);
   const [startBetting, setStartBetting] = useState(false);
   const [cardsDealt, setCardsDealt] = useState(false);
+  const [userCards, setUserCards] = useState<Card[]>([]);
+  const [dealerCards, setDealerCards] = useState<Card[]>([]);
 
   useEffect(() => {
     if (!socket) return;
@@ -45,8 +50,11 @@ const TestGame = () => {
       console.log('Cards dealt');
       setCardsDealt(true);
     });
-    socket.on('gameState', (data) => {
-      console.log('Received game state:', data);
+    socket.on('gameState', (gs: GameState) => {
+      console.log('Received game state:', gs);
+      if (!gs) return;
+      setUserCards(gs.seats[0].hands[0].cards);
+      setDealerCards(gs.dealerHand);
     });
   }, [socket]);
 
@@ -112,13 +120,21 @@ const TestGame = () => {
 
   return (
     <div>
-      <button onClick={() => createRoom()}>Create Room</button>
-      <button onClick={() => startGame()}>Start Game</button>
-      <input
-        type="text"
-        onChange={(e) => setJoinRoomData({ roomUrl: e.target.value })}
-      />
-      <button onClick={() => joinRoom()}>Join Room</button>
+      <h1>Test Game</h1>
+      {!roomData && !userRoomData && (
+        <>
+          <button onClick={() => createRoom()}>Create Room</button>
+          <button onClick={() => joinRoom()}>Join Room</button>
+          <input
+            type="text"
+            onChange={(e) => setJoinRoomData({ roomUrl: e.target.value })}
+          />
+        </>
+      )}
+      {roomData && userRoomData && !startBetting && !cardsDealt && (
+        <button onClick={() => startGame()}>Start Game</button>
+      )}
+
       {startBetting && (
         <div>
           <button onClick={() => takeAction('Bet')}>Bet</button>
@@ -129,10 +145,50 @@ const TestGame = () => {
         </div>
       )}
       {cardsDealt && (
-        <div>
-          <button onClick={() => takeAction('Hit')}>Hit</button>
-          <button onClick={() => takeAction('Stand')}>Stand</button>
-        </div>
+        <>
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              <h2>Dealer Count: {computeHandCount(dealerCards)}</h2>
+              {dealerCards.map((card, index) => (
+                <div
+                  key={card.suit + card.card + index}
+                  style={{ display: 'flex' }}
+                >
+                  <p>{card.suit}</p>
+                  <p>{card.card}</p>
+                </div>
+              ))}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              <h2>Player Count: {computeHandCount(userCards)}</h2>
+              {userCards.map((card, index) => (
+                <div
+                  key={card.suit + card.card + index}
+                  style={{ display: 'flex' }}
+                >
+                  <p>{card.suit}</p>
+                  <p>{card.card}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <button onClick={() => takeAction('Hit')}>Hit</button>
+            <button onClick={() => takeAction('Stand')}>Stand</button>
+          </div>
+        </>
       )}
     </div>
   );

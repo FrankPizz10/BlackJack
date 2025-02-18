@@ -12,4 +12,5 @@ export type CardValue =
   | 'J'
   | 'Q'
   | 'K'
-  | 'A';
+  | 'A'
+  | 'HIDDEN';

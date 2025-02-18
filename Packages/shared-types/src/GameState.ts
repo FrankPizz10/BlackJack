@@ -1,11 +1,12 @@
 import { Card } from './Card';
-import { createDeck, Deck, draw } from './Deck';
+import { createDeck, Deck, draw, shuffle } from './Deck';
 import { Hand, computeHandCount } from './Hand';
 import { Seat } from './Seat';
 import { ActionType } from './ActionType';
 import { Action } from './Action';
 import { StartGame } from './db/Game';
 import { Bet } from './Bet';
+import { Player } from './Player';
 
 // GameState.ts will be stored in Redis Cache
 // Redis Key for the Gamestate will look like Game:{roomId}
@@ -18,7 +19,6 @@ export type GameState = {
   timeToAct: number;
   timeToBet: number;
   deck: Deck;
-  action: Action;
   shuffle: boolean;
 };
 
@@ -32,12 +32,13 @@ const drawCard = (deck: Deck, gs: GameState): Card | null => {
 };
 
 // Helper method to check eligible actions for a Seat
-export const check_eligible_action = (gs: GameState): ActionType[] => {
-  const seat = gs.seats[gs.seats.findIndex((s) => s.seat_turn)];
+export const checkEligibleAction = (gs: GameState): ActionType[] => {
+  const seat = gs.seats[gs.seats.findIndex((s) => s.isTurn)];
   const hand = seat.hands.find((h) => h.is_current_hand);
   if (!hand) return [];
 
   const total = computeHandCount(hand.cards);
+  console.log('Total Hand Count: ', total);
   const actions: ActionType[] = [];
 
   if (total === 21) return actions; // No actions allowed if hand is 21
@@ -103,7 +104,7 @@ export const handleCheckHand = (
     gs.seats[seat].player.stack += hasWon ? 2 * hand.bet : 0;
     gs.seats[seat].hands.splice(current_hand, 1);
   } else {
-    const nextSeat = gs.seats.findIndex((s, i) => i > seat && !s.is_afk);
+    const nextSeat = gs.seats.findIndex((s, i) => i > seat && !s.isAfk);
     if (nextSeat !== -1) {
       gs.seats[nextSeat].hands[0].is_current_hand = true;
     }
@@ -209,13 +210,8 @@ export const handleBet = (gs: GameState, bet: Bet): boolean => {
     return false;
   }
   console.log('Seats: ', gs.seats);
-  // Create a new hand for the player
-  gs.seats[seatPosition].hands.push({
-    cards: [],
-    bet: bet.betAmount,
-    is_current_hand: false,
-    is_done: false,
-  });
+  // Update the hand
+  gs.seats[seatPosition].hands[0].bet = bet.betAmount;
 
   // Deduct the bet amount from the player's stack
   gs.seats[seatPosition].player.stack -= bet.betAmount;
@@ -225,16 +221,22 @@ export const handleBet = (gs: GameState, bet: Bet): boolean => {
 
 // Main method: take_action
 export const takeAction = (gs: GameState, action: Action): GameState => {
-  const seat = gs.seats.findIndex((s) => s.seat_turn);
+  console.log('Starting Action: ', action);
+  const seat = gs.seats.findIndex((s) => s.isTurn);
   if (seat === -1) return gs; // No active seat
 
   if (action.actionType === 'Bet' && action.bet) {
     handleBet(gs, action.bet);
   }
-
+  const elligbleActions = checkEligibleAction(gs);
+  console.log('Eligible Action Types: ', elligbleActions);
+  if (!elligbleActions.includes(action.actionType)) {
+    return gs;
+  }
+  console.log('Elligible Action: ', action);
   const current_hand = gs.seats[seat].hands.findIndex((h) => h.is_current_hand);
   if (current_hand === -1) return gs; // No current hand
-
+  console.log('Current Hand: ', gs.seats[seat].hands[current_hand]);
   let is_done = false;
 
   switch (action.actionType) {
@@ -266,12 +268,12 @@ export const takeAction = (gs: GameState, action: Action): GameState => {
 
   if (is_done) {
     gs.seats[seat].hands[current_hand].is_current_hand = false;
-    gs.seats[seat].seat_turn = false;
+    gs.seats[seat].isTurn = false;
 
     if (seat === gs.seats.length - 1) {
       gs.roundOver = true;
     } else {
-      gs.seats[seat + 1].seat_turn = true;
+      gs.seats[seat + 1].isTurn = true;
     }
   }
 
@@ -285,9 +287,16 @@ export const createNewGameState = (startGame: StartGame): GameState => {
     dealerHand: [],
     seats: [
       {
-        hands: [],
-        seat_turn: true,
-        is_afk: false,
+        hands: [
+          {
+            cards: [],
+            bet: 0,
+            is_current_hand: true,
+            is_done: false,
+          },
+        ],
+        isTurn: true,
+        isAfk: false,
         player: {
           user_ID: startGame.userRoomDb.userId,
           stack: 100,
@@ -299,47 +308,58 @@ export const createNewGameState = (startGame: StartGame): GameState => {
     roundOver: false,
     timeToAct: 20,
     timeToBet: 15,
-    deck: createDeck(),
-    action: { actionType: 'None', bet: null },
+    deck: shuffle(createDeck()),
     shuffle: false,
   };
 };
 
 // Begin to deal cards for the game
 export const dealCards = (gs: GameState): GameState => {
-  // Ensure each seat has at least one hand initialized
-  gs.seats.forEach((seat) => {
-    if (seat.hands.length === 0) {
-      seat.hands.push({
-        cards: [],
-        bet: 0,
-        is_current_hand: false,
-        is_done: false,
-      });
-    }
-  });
-
-  // Ensure dealer has a hand initialized
-  if (!gs.dealerHand) {
-    gs.dealerHand = [];
-  }
-
   // Deal cards in rounds
   for (let i = 0; i < 2; i++) {
     // Deal one card to each player first
     gs.seats.forEach((seat) => {
       const card = drawCard(gs.deck, gs);
       if (card) {
-        seat.hands[0].cards.push(card);
+        seat.hands[0].cards.push({
+          ...card,
+          faceUp: true,
+        });
       }
     });
 
     // Deal one card to the dealer
     const dealerCard = drawCard(gs.deck, gs);
-    if (dealerCard) {
-      gs.dealerHand.push(dealerCard);
+    if (!dealerCard) return gs;
+    if (i === 0) {
+      gs.dealerHand.push({
+        ...dealerCard,
+        faceUp: true,
+      });
+    } else {
+      gs.dealerHand.push({
+        ...dealerCard,
+        faceUp: false,
+      });
     }
   }
 
+  return gs;
+};
+
+export const addPlayer = (gs: GameState, player: Player): GameState => {
+  gs.seats.push({
+    hands: [
+      {
+        cards: [],
+        bet: 0,
+        is_current_hand: false,
+        is_done: false,
+      },
+    ],
+    isTurn: false,
+    isAfk: false,
+    player: player,
+  });
   return gs;
 };

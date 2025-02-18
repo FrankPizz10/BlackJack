@@ -1,7 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { AppContext } from '../../context';
 import { Queue } from 'bullmq';
-import { TestGameState } from '@shared-types/Bullmq/jobs';
 import { startTurn } from '../../services/gameStateService';
 import {
   createNewGameState,
@@ -35,7 +34,10 @@ export const startGame = async (
     // Broadcast game started
     io.to(startGame.roomDb.url).emit('gameStarted');
     // broadcast game state
-    io.to(startGame.roomDb.url).emit('gameState', gameState);
+    io.to(startGame.roomDb.url).emit(
+      'gameState',
+      removeFaceDownCards(gameState)
+    );
     // start turn
     try {
       await startTurn(startGame.roomDb.url, turnQueue);
@@ -75,7 +77,7 @@ export const handleTakeAction = async (
     const newGameState = takeAction(gameState, action);
     // Remove old job from queue
     const job = await turnQueue.getJob(actionEvent.roomUrl);
-    console.log('Found job:', job);
+    console.log('Found job with id:', job?.id);
     if (job) await job.remove();
 
     // Update Redis game state
@@ -90,7 +92,6 @@ export const handleTakeAction = async (
     } catch (err) {
       console.error('Error updating game state:', err);
     }
-
     // Check if all hands have bet and cards have not been dealt yet
     if (
       newGameState.seats.every((seat) =>
@@ -108,7 +109,10 @@ export const handleTakeAction = async (
           JSON.stringify(dealtGameState)
         );
         io.to(actionEvent.roomUrl).emit('cardsDealt');
-        io.to(actionEvent.roomUrl).emit('gameState', newGameState);
+        io.to(actionEvent.roomUrl).emit(
+          'gameState',
+          removeFaceDownCards(newGameState)
+        );
       } catch (err) {
         console.error('Error dealing cards:', err);
       }
@@ -124,4 +128,31 @@ export const handleTakeAction = async (
   } catch (err) {
     console.error('Error handling takeAction:', err);
   }
+};
+
+// Remove the value of face down cards from gamestate
+const removeFaceDownCards = (gameState: GameState) => {
+  gameState.seats.forEach((seat) => {
+    seat.hands.forEach((hand) => {
+      hand.cards.forEach((card) => {
+        if (!card.faceUp) {
+          card.card = 'HIDDEN';
+          card.suit = 'HIDDEN';
+        }
+      });
+    });
+  });
+  gameState.dealerHand.forEach((card) => {
+    if (!card.faceUp) {
+      card.card = 'HIDDEN';
+      card.suit = 'HIDDEN';
+    }
+  });
+  gameState.deck.currentDeck.forEach((card) => {
+    if (!card.faceUp) {
+      card.card = 'HIDDEN';
+      card.suit = 'HIDDEN';
+    }
+  });
+  return gameState;
 };

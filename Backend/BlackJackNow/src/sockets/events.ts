@@ -7,6 +7,7 @@ import { handleTakeAction, startGame } from './handlers/gameHandlers';
 import { StartGame, startGameSchema } from '@shared-types/db/Game';
 import { JoinRoom, joinRoomSchema } from '@shared-types/db/Room';
 import { ActionEvent } from '@shared-types/Action';
+import { CustomSocket } from '.';
 
 export const registerSocketEvents = (
   io: Server,
@@ -35,6 +36,11 @@ export const registerSocketEvents = (
     handleJoinRoom(io, socket, context, user, data);
   });
   socket.on('takeAction', (data: ActionEvent) => {
+    if (!data.roomUrl) return;
+    if (!(socket as CustomSocket).roomUrl.has(data.roomUrl)) {
+      console.error('User not in room:', data.roomUrl);
+      socket.emit('error', 'User not in room');
+    }
     handleTakeAction(io, context, turnQueue, data);
   });
 };

@@ -21,7 +21,10 @@ export const subscribeToRedisChannel = (
     // check if message is from gameState channel
     if (channel === 'channel:gameStateUpdates') {
       const gameState: GameState = JSON.parse(message);
-      console.log('Subscriber received message:', gameState);
+      console.log(
+        'Subscriber received message with roomId:',
+        gameState.rommDbId
+      );
       const roomDb = await context.prisma.rooms.findUniqueOrThrow({
         where: { id: gameState.rommDbId },
       });
