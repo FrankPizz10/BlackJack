@@ -13,4 +13,3 @@ export const createUserSeat = async (
   });
   return userSeat;
 };
-

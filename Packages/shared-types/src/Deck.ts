@@ -30,7 +30,7 @@ export const generateBaseDeck = (): Card[] => {
 };
 
 export const createDeck = (numDecks: number = 1): Deck => {
-  let baseDeck = Array(numDecks)
+  const baseDeck = Array(numDecks)
     .fill(null)
     .flatMap(() => generateBaseDeck());
 

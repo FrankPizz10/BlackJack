@@ -2,7 +2,7 @@ import { Server } from 'socket.io';
 import { AppContext } from '../context';
 import { startTurn } from '../services/gameStateService';
 import { Queue } from 'bullmq';
-import { GameState } from '@shared-types/GameState';
+import { GameState, removeFaceDownCards } from '@shared-types/GameState';
 
 export const subscribeToRedisChannel = (
   io: Server,
@@ -36,7 +36,7 @@ export const subscribeToRedisChannel = (
         return;
       }
       // broadcast game state
-      io.to(roomDb.url).emit('gameState', gameState);
+      io.to(roomDb.url).emit('gameState', removeFaceDownCards(gameState));
     }
   });
 };

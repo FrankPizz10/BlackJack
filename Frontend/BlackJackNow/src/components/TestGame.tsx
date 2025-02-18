@@ -22,6 +22,7 @@ const TestGame = () => {
   const [cardsDealt, setCardsDealt] = useState(false);
   const [userCards, setUserCards] = useState<Card[]>([]);
   const [dealerCards, setDealerCards] = useState<Card[]>([]);
+  const [gameState, setGameState] = useState<GameState | null>(null);
 
   useEffect(() => {
     if (!socket) return;
@@ -55,6 +56,7 @@ const TestGame = () => {
       if (!gs) return;
       setUserCards(gs.seats[0].hands[0].cards);
       setDealerCards(gs.dealerHand);
+      setGameState(gs);
     });
   }, [socket]);
 
@@ -175,6 +177,8 @@ const TestGame = () => {
             >
               <h2>Player Count: {computeHandCount(userCards)}</h2>
               {computeHandCount(userCards) > 21 && <h2>Player Bust</h2>}
+              {gameState?.seats[0].hands[0].isWon && <h2>Player Won</h2>}
+              {!gameState?.seats[0].hands[0].isWon && <h2>Player Lost</h2>}
               {userCards.map((card, index) => (
                 <div
                   key={card.suit + card.card + index}

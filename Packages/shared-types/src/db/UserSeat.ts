@@ -10,4 +10,3 @@ export const userSeatSchema = z.object({
 });
 
 export type UserSeat = z.infer<typeof userSeatSchema>;
-
