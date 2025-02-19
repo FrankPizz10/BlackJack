@@ -57,3 +57,19 @@ export const createRoom = async (
     throw error;
   }
 };
+
+// Get room info, user rooms, and user seats
+export const getRoomInfoByUrl = async (context: AppContext, url: string) => {
+  try {
+    const roomDb = await context.prisma.rooms.findUniqueOrThrow({
+      where: { url },
+      include: {
+        UserRoom: { include: { Seats: true } },
+      },
+    });
+    return { roomDb };
+  } catch (error) {
+    console.error('Error fetching room:', error);
+    throw error;
+  }
+};

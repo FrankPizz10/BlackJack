@@ -7,6 +7,7 @@ import { createUserRoom } from '../../services/userRoomService';
 import {
   CreateUserRoom,
   createUserRoomSchema,
+  userRoomSchema,
 } from '@shared-types/db/UserRoom';
 import { StartGame } from '@shared-types/db/Game';
 import { JoinRoom } from '@shared-types/db/Room';
@@ -28,6 +29,7 @@ export const handleCreateRoom = async (
       roomId: roomDb.id,
       host: true,
       name: socket.id,
+      initialStack: 100,
     };
     const result = createUserRoomSchema.safeParse(userRoomData);
     if (!result.success) {
@@ -36,14 +38,15 @@ export const handleCreateRoom = async (
     }
     const userRoom = await createUserRoom(context, userRoomData);
     console.log('User room created:', userRoom);
-    const userSeat = await createUserSeat(context, userRoom);
+    const parsedUserRoom = userRoomSchema.parse(userRoom);
+    const userSeat = await createUserSeat(context, parsedUserRoom);
     console.log('User seat created:', userSeat);
     // join room
     console.log('Joining room:', roomDb.url);
     socket.join(roomDb.url);
     const startGame: StartGame = {
       roomDb,
-      userRoomDb: userRoom,
+      userRoomDb: parsedUserRoom,
       userSeatDb: userSeat,
     };
     io.to(socket.id).emit('roomCreated', startGame);
@@ -84,6 +87,7 @@ export const handleJoinRoom = async (
     roomId: roomWithSize.id,
     host: false,
     name: socket.id,
+    initialStack: 100,
   };
   const userRoom = await createUserRoom(context, userRoomData);
   // join room

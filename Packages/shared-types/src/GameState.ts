@@ -4,9 +4,9 @@ import { Hand, computeHandCount } from './Hand';
 import { Seat } from './Seat';
 import { ActionType } from './ActionType';
 import { Action } from './Action';
-import { StartGame } from './db/Game';
 import { Bet } from './Bet';
 import { Player } from './Player';
+import { RoomWithUsersAndSeats, UserRoomWithSeat } from './db/UserRoom';
 
 // GameState.ts will be stored in Redis Cache
 // Redis Key for the Gamestate will look like Game:{roomId}
@@ -287,37 +287,44 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
   return { gs, actionSuccess: true };
 };
 
-export const createNewGameState = (startGame: StartGame): GameState => {
+export const createNewGameState = (
+  roomInfo: RoomWithUsersAndSeats
+): GameState => {
   return {
-    rommDbId: startGame.roomDb.id,
-    gameTableDbId: startGame.roomDb.gameTableId,
+    rommDbId: roomInfo.id,
+    gameTableDbId: roomInfo.gameTableId,
     dealerHand: [],
-    seats: [
-      {
-        hands: [
-          {
-            cards: [],
-            bet: 0,
-            isCurrentHand: true,
-            isDone: false,
-          },
-        ],
-        isTurn: true,
-        isAfk: false,
-        player: {
-          user_ID: startGame.userRoomDb.userId,
-          stack: 100,
-          userRoomDbId: startGame.roomDb.id,
-          gameTableDbId: startGame.roomDb.gameTableId,
-        },
-      },
-    ],
+    seats: [...createSeats(roomInfo.UserRooms, roomInfo.gameTableId)],
     roundOver: false,
     timeToAct: 20,
     timeToBet: 15,
     deck: shuffle(createDeck()),
     shuffle: false,
   };
+};
+
+const createSeats = (
+  userRooms: UserRoomWithSeat[],
+  gameTableId: number
+): Seat[] => {
+  return userRooms.map((userRoom) => ({
+    hands: [
+      {
+        cards: [],
+        bet: 0,
+        isCurrentHand: true,
+        isDone: false,
+      },
+    ],
+    isTurn: userRoom.UserSeat.position === 1,
+    isAfk: false,
+    player: {
+      user_ID: userRoom.userId,
+      stack: userRoom.initialStack,
+      userRoomDbId: userRoom.roomId,
+      gameTableDbId: gameTableId,
+    },
+  }));
 };
 
 // Begin to deal cards for the game

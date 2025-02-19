@@ -4,7 +4,7 @@ import { StartGame } from '@shared-types/db/Game';
 import { RoomData } from '@shared-types/db/Room';
 import { UserRoom } from '@shared-types/db/UserRoom';
 import { JoinRoom } from '@shared-types/db/Room';
-import { ActionEvent } from '@shared-types/Action';
+import { ActionEvent, Event } from '@shared-types/Action';
 import { UserSeat } from '@shared-types/db/UserSeat';
 import { ActionType } from '@shared-types/ActionType';
 import { GameState } from '@shared-types/GameState';
@@ -68,12 +68,8 @@ const TestGame = () => {
   };
 
   const startGame = async () => {
-    if (!roomData || !userRoomData) return;
-    const startGame: StartGame = {
-      roomDb: roomData,
-      userRoomDb: userRoomData,
-      userSeatDb: seats[0],
-    };
+    if (!roomData) return;
+    const startGame: Event = { roomUrl: roomData.url };
     console.log('Starting game: ', startGame);
     socket.emit('startGame', startGame);
   };

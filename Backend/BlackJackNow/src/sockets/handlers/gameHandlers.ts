@@ -1,4 +1,4 @@
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { AppContext } from '../../context';
 import { Queue } from 'bullmq';
 import { startTurn } from '../../services/gameStateService';
@@ -10,38 +10,39 @@ import {
   checkDealReady,
   takeAction,
 } from '@shared-types/GameState';
-import { StartGame } from '@shared-types/db/Game';
 import { ActionEvent, Action } from '@shared-types/Action';
+import {
+  RoomWithUsersAndSeats,
+  UserRoomWithSeat,
+} from '@shared-types/db/UserRoom';
 
 export const startGame = async (
   io: Server,
-  socket: Socket,
   context: AppContext,
   turnQueue: Queue,
-  startGame: StartGame
+  roomWithUsersAndSeats: RoomWithUsersAndSeats,
+  currentUserInfo: UserRoomWithSeat
 ) => {
   console.log('Starting game...');
-  if (!startGame.userRoomDb.host) {
-    console.error('User is not host');
-    socket.emit('error', 'User is not host');
-    return;
-  }
   try {
-    const gameState = createNewGameState(startGame);
+    const gameState = createNewGameState(
+      roomWithUsersAndSeats,
+      currentUserInfo
+    );
     await context.redis.set(
-      `gameState:${startGame.roomDb.url}`,
+      `gameState:${roomWithUsersAndSeats.url}`,
       JSON.stringify(gameState)
     );
     // Broadcast game started
-    io.to(startGame.roomDb.url).emit('gameStarted');
+    io.to(roomWithUsersAndSeats.url).emit('gameStarted');
     // broadcast game state
-    io.to(startGame.roomDb.url).emit(
+    io.to(roomWithUsersAndSeats.url).emit(
       'gameState',
       removeFaceDownCards(gameState)
     );
     // start turn
     try {
-      await startTurn(startGame.roomDb.url, turnQueue);
+      await startTurn(roomWithUsersAndSeats.url, turnQueue);
     } catch (err) {
       console.error('Error starting turn job:', err);
     }
