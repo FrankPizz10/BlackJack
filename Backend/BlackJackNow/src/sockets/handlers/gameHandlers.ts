@@ -25,10 +25,7 @@ export const startGame = async (
 ) => {
   console.log('Starting game...');
   try {
-    const gameState = createNewGameState(
-      roomWithUsersAndSeats,
-      currentUserInfo
-    );
+    const gameState = createNewGameState(roomWithUsersAndSeats);
     await context.redis.set(
       `gameState:${roomWithUsersAndSeats.url}`,
       JSON.stringify(gameState)

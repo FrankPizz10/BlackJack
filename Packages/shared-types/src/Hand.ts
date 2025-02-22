@@ -7,6 +7,7 @@ export type Hand = {
   isDone: boolean;
   isWon?: boolean;
   isPush?: boolean;
+  isBlackjack?: boolean;
 };
 
 export const computeHandCount = (cards: Card[]): number => {

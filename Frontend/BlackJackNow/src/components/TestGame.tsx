@@ -11,11 +11,15 @@ import { GameState } from '@shared-types/GameState';
 import { Card } from '@shared-types/Card';
 import { computeHandCount } from '@shared-types/Hand';
 
+const positionHelper = (seat: UserSeat | null) => {
+  return seat && seat.position ? seat.position - 1 : 0;
+};
+
 const TestGame = () => {
   const { socket } = useSocket();
   const [roomData, setRoomData] = useState<RoomData | null>(null);
-  const [seats, setSeats] = useState<UserSeat[]>([]);
   const [userRoomData, setUserRoomData] = useState<UserRoom | null>(null);
+  const [userSeatData, setUserSeatData] = useState<UserSeat | null>(null);
   const [joinRoomData, setJoinRoomData] = useState<JoinRoom | null>(null);
   const [betAmount, setBetAmount] = useState(0);
   const [startBetting, setStartBetting] = useState(false);
@@ -30,7 +34,7 @@ const TestGame = () => {
       const { roomDb, userRoomDb, userSeatDb } = data;
       setRoomData(roomDb);
       setUserRoomData(userRoomDb);
-      setSeats([userSeatDb]);
+      setUserSeatData(userSeatDb);
       console.log('Room created: ', data);
     });
     socket.on('roomJoined', (data: UserRoom) => {
@@ -54,7 +58,7 @@ const TestGame = () => {
     socket.on('gameState', (gs: GameState) => {
       console.log('Received game state:', gs);
       if (!gs) return;
-      setUserCards(gs.seats[0].hands[0].cards);
+      setUserCards(gs.seats[positionHelper(userSeatData)].hands[0].cards);
       setDealerCards(gs.dealerHand);
       setGameState(gs);
     });
@@ -84,13 +88,15 @@ const TestGame = () => {
     if (!roomData || !userRoomData) return;
     let action: ActionEvent;
     if (actionType === 'Bet') {
-      console.log('Action Bet: ', actionType, betAmount);
-      const bettingSeat = seats[0];
       action = {
         roomUrl: roomData.url,
         actionType: actionType,
-        bet: { betAmount: betAmount, bettingSeat: bettingSeat.position },
+        bet: {
+          betAmount: betAmount,
+          bettingSeat: positionHelper(userSeatData),
+        },
       };
+      console.log('Action Bet: ', action);
     } else if (actionType === 'Hit') {
       console.log('Action Hit: ', actionType);
       action = {
@@ -105,6 +111,15 @@ const TestGame = () => {
         actionType: actionType,
         bet: null,
       };
+    } else if (actionType === 'Reset') {
+      console.log('Action Reset: ', actionType);
+      action = {
+        roomUrl: roomData.url,
+        actionType: actionType,
+        bet: null,
+      };
+      setStartBetting(true);
+      setCardsDealt(false);
     } else {
       return;
     }
@@ -173,8 +188,19 @@ const TestGame = () => {
             >
               <h2>Player Count: {computeHandCount(userCards)}</h2>
               {computeHandCount(userCards) > 21 && <h2>Player Bust</h2>}
-              {gameState?.seats[0].hands[0].isWon && <h2>Player Won</h2>}
-              {!gameState?.seats[0].hands[0].isWon && <h2>Player Lost</h2>}
+              {gameState?.seats[positionHelper(userSeatData)].hands[0]
+                .isBlackjack && <h2>BlackJack!</h2>}
+              {gameState?.seats[positionHelper(userSeatData)].hands[0].isDone &&
+                gameState?.seats[positionHelper(userSeatData)].hands[0]
+                  .isWon && <h2>Player Won</h2>}
+              {gameState?.seats[positionHelper(userSeatData)].hands[0].isDone &&
+                !gameState?.seats[positionHelper(userSeatData)].hands[0]
+                  .isWon &&
+                !gameState?.seats[positionHelper(userSeatData)].hands[0]
+                  .isPush && <h2>Player Lost</h2>}
+              {gameState?.seats[positionHelper(userSeatData)].hands[0].isDone &&
+                gameState?.seats[positionHelper(userSeatData)].hands[0]
+                  .isPush && <h2>Player Push</h2>}
               {userCards.map((card, index) => (
                 <div
                   key={card.suit + card.card + index}
@@ -187,10 +213,24 @@ const TestGame = () => {
             </div>
           </div>
           <div>
-            <button onClick={() => takeAction('Hit')}>Hit</button>
-            <button onClick={() => takeAction('Stand')}>Stand</button>
+            <div>
+              {!gameState?.roundOver && (
+                <>
+                  <button onClick={() => takeAction('Hit')}>Hit</button>
+                  <button onClick={() => takeAction('Stand')}>Stand</button>
+                </>
+              )}
+            </div>
+            {gameState?.roundOver && (
+              <button onClick={() => takeAction('Reset')}>Reset</button>
+            )}
           </div>
         </>
+      )}
+      {gameState?.seats[positionHelper(userSeatData)].player.stack && (
+        <h1>
+          Stack: {gameState?.seats[positionHelper(userSeatData)].player.stack}
+        </h1>
       )}
     </div>
   );

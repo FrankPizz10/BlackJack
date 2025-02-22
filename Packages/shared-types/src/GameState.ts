@@ -201,7 +201,11 @@ export const handleSplit = (
 export const handleBet = (gs: GameState, bet: Bet): boolean => {
   if (!gs || !bet) return false;
 
-  const seatPosition = bet.bettingSeat - 1;
+  const seatPosition = bet.bettingSeat;
+  if (!gs.seats[seatPosition].player) {
+    console.error('Player not found at position', seatPosition);
+    return false;
+  }
 
   if (bet.betAmount > gs.seats[seatPosition].player.stack) {
     console.log('Not enough stack');
@@ -217,6 +221,24 @@ export const handleBet = (gs: GameState, bet: Bet): boolean => {
   return true;
 };
 
+const handleReset = (gs: GameState): void => {
+  gs.seats.forEach((seat: Seat, seatIndex) => {
+    seat.hands.forEach((hand: Hand) => {
+      hand.isDone = false;
+      hand.cards = [];
+      hand.isCurrentHand = true;
+      hand.isBlackjack = false;
+      hand.isDone = false;
+      hand.isPush = false;
+      hand.isWon = false;
+      hand.bet = 0;
+    });
+    seat.isTurn = seatIndex === 0;
+  });
+  gs.roundOver = false;
+  gs.dealerHand = [];
+};
+
 export interface ActionResult {
   gs: GameState;
   actionSuccess: boolean;
@@ -225,19 +247,26 @@ export interface ActionResult {
 // Main method: take_action
 export const takeAction = (gs: GameState, action: Action): ActionResult => {
   console.log('Starting Action: ', action);
-  const seat = gs.seats.findIndex((s) => s.isTurn);
-  if (seat === -1) return { gs, actionSuccess: false }; // No active seat
 
   if (action.actionType === 'Bet' && action.bet) {
     handleBet(gs, action.bet);
     return { gs, actionSuccess: true };
   }
+
+  if (action.actionType === 'Reset') {
+    handleReset(gs);
+    return { gs, actionSuccess: true };
+  }
+
+  const seat = gs.seats.findIndex((s) => s.isTurn);
+  if (seat === -1) return { gs, actionSuccess: false }; // No active seat
+
   const elligbleActions = checkEligibleAction(gs);
   console.log('Eligible Action Types: ', elligbleActions);
   if (!elligbleActions.includes(action.actionType)) {
     return { gs, actionSuccess: false };
   }
-  console.log('Elligible Action: ', action);
+  console.log('Eligible Action: ', action);
   const current_hand = gs.seats[seat].hands.findIndex((h) => h.isCurrentHand);
   if (current_hand === -1) return { gs, actionSuccess: false }; // No current hand
   console.log('Current Hand: ', gs.seats[seat].hands[current_hand]);
@@ -278,6 +307,7 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
       handleDealer(gs);
       // Check hands for winners and losers
       checkHandsWon(gs);
+      payoutHands(gs);
       gs.roundOver = true;
     } else {
       gs.seats[seat + 1].isTurn = true;
@@ -285,6 +315,21 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
   }
 
   return { gs, actionSuccess: true };
+};
+
+const payoutHands = (gs: GameState) => {
+  gs.seats.forEach((seat) => {
+    seat.hands.forEach((hand) => {
+      if (hand.isBlackjack) {
+        seat.player.stack += 2.5 * hand.bet;
+      } else if (hand.isPush) {
+        seat.player.stack += hand.bet;
+      } else if (hand.isWon) {
+        seat.player.stack += 2 * hand.bet;
+      }
+      hand.bet = 0;
+    });
+  });
 };
 
 export const createNewGameState = (
@@ -329,33 +374,76 @@ const createSeats = (
 
 // Begin to deal cards for the game
 export const dealCards = (gs: GameState): GameState => {
-  // Deal cards in rounds
-  for (let i = 0; i < 2; i++) {
-    // Deal one card to each player first
-    gs.seats.forEach((seat) => {
-      const card = drawCard(gs.deck, gs);
-      if (card) {
-        seat.hands[0].cards.push({
-          ...card,
-          faceUp: true,
-        });
-      }
-    });
-
-    // Deal one card to the dealer
-    const dealerCard = drawCard(gs.deck, gs);
-    if (!dealerCard) return gs;
-    if (i === 0) {
-      gs.dealerHand.push({
-        ...dealerCard,
+  // First round: deal one face-up card to each player
+  gs.seats.forEach((seat) => {
+    const card = drawCard(gs.deck, gs);
+    if (card) {
+      seat.hands[0].cards.push({
+        ...card,
         faceUp: true,
       });
-    } else {
-      gs.dealerHand.push({
-        ...dealerCard,
-        faceUp: false,
+    }
+  });
+
+  // First round: deal one face-up card to the dealer
+  const dealerCard1 = drawCard(gs.deck, gs);
+  if (dealerCard1) {
+    gs.dealerHand.push({
+      ...dealerCard1,
+      faceUp: true,
+    });
+  }
+
+  // Second round: deal one face-up card to each player
+  gs.seats.forEach((seat) => {
+    const card = drawCard(gs.deck, gs);
+    if (card) {
+      seat.hands[0].cards.push({
+        ...card,
+        faceUp: true,
       });
     }
+  });
+
+  // Second round: deal one face-down card to the dealer
+  const dealerCard2 = drawCard(gs.deck, gs);
+  if (dealerCard2) {
+    gs.dealerHand.push({
+      ...dealerCard2,
+      faceUp: false,
+    });
+  }
+
+  // Check for Blackjacks
+  gs.seats.forEach((seat) => {
+    if (computeHandCount(seat.hands[0].cards) === 21) {
+      seat.hands[0].isDone = true;
+      seat.hands[0].isWon = true;
+      seat.hands[0].isBlackjack = true;
+    }
+  });
+
+  // Check if the dealer has a blackjack
+  if (computeHandCount(gs.dealerHand) === 21) {
+    gs.seats.forEach((seat) => {
+      if (!computeHandCount(seat.hands[0].cards)) {
+        seat.hands[0].isDone = true;
+        seat.hands[0].isWon = false;
+        seat.hands[0].isBlackjack = false;
+        gs.roundOver = true;
+      } else {
+        seat.hands[0].isDone = true;
+        seat.hands[0].isWon = false;
+        seat.hands[0].isBlackjack = false;
+        seat.hands[0].isPush = true;
+        gs.roundOver = true;
+      }
+    });
+  }
+
+  if (gs.seats.every((seat) => seat.hands[0].isDone)) {
+    gs.roundOver = true;
+    payoutHands(gs);
   }
 
   return gs;
@@ -380,19 +468,39 @@ export const addPlayer = (gs: GameState, player: Player): GameState => {
 
 // Check and populate winners
 export const checkHandsWon = (gs: GameState): GameState => {
+  const dealerTotal = computeHandCount(gs.dealerHand);
+  // Dealer Busts
+  if (dealerTotal > 21) {
+    gs.seats.forEach((seat) => {
+      seat.hands.forEach((hand) => {
+        hand.isDone = true;
+        hand.isWon = true;
+      });
+    });
+    return gs;
+  }
   gs.seats.forEach((seat) => {
     seat.hands.forEach((hand) => {
       const total = computeHandCount(hand.cards);
+      // Player Busts
       if (total > 21) {
         hand.isDone = true;
         hand.isWon = false;
-      } else if (total < computeHandCount(gs.dealerHand)) {
+        // Blackjack
+      } else if (total === 21 && hand.cards.length === 2) {
+        hand.isDone = true;
+        hand.isBlackjack = true;
+        hand.isWon = true;
+        // Player Loses
+      } else if (total < dealerTotal) {
         hand.isDone = true;
         hand.isWon = false;
-      } else if (total > computeHandCount(gs.dealerHand)) {
+        // Player Wins
+      } else if (total > dealerTotal) {
         hand.isDone = true;
         hand.isWon = true;
-      } else if (total === computeHandCount(gs.dealerHand)) {
+        // Push
+      } else if (total === dealerTotal) {
         hand.isDone = true;
         hand.isPush = true;
       }
