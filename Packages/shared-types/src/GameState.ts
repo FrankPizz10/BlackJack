@@ -308,6 +308,10 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
       // Check hands for winners and losers
       checkHandsWon(gs);
       payoutHands(gs);
+      if (gs.shuffle) {
+        gs.deck = shuffle(gs.deck);
+        gs.shuffle = false;
+      }
       gs.roundOver = true;
     } else {
       gs.seats[seat + 1].isTurn = true;
