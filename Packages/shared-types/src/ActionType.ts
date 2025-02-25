@@ -10,4 +10,5 @@ export type ActionType =
   | 'CheckHand'
   | 'Bet'
   | 'ForceShuffle'
-  | 'Shuffle';
+  | 'Shuffle'
+  | 'Reset';

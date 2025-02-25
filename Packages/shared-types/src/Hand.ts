@@ -3,8 +3,11 @@ import { Card } from './Card';
 export type Hand = {
   cards: Card[];
   bet: number;
-  is_current_hand: boolean;
-  is_done: boolean;
+  isCurrentHand: boolean;
+  isDone: boolean;
+  isWon?: boolean;
+  isPush?: boolean;
+  isBlackjack?: boolean;
 };
 
 export const computeHandCount = (cards: Card[]): number => {
@@ -17,6 +20,8 @@ export const computeHandCount = (cards: Card[]): number => {
       aces++;
     } else if (['K', 'Q', 'J', '10'].includes(card.card)) {
       total += 10;
+    } else if (card.card === 'HIDDEN') {
+      total += 0;
     } else {
       total += parseInt(card.card, 10);
     }
@@ -29,4 +34,8 @@ export const computeHandCount = (cards: Card[]): number => {
   }
 
   return total;
+};
+
+export const testHand = (): void => {
+  console.log('Test');
 };

@@ -3,7 +3,7 @@ import { Player } from './Player';
 
 export type Seat = {
   hands: Hand[];
-  is_afk: boolean;
-  seat_turn: boolean;
+  isAfk: boolean;
+  isTurn: boolean;
   player: Player;
 };

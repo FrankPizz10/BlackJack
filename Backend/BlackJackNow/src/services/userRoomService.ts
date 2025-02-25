@@ -3,7 +3,8 @@ import { CreateUserRoom } from '@shared-types/db/UserRoom';
 
 export const createUserRoom = async (
   context: AppContext,
-  createUserRoom: CreateUserRoom
+  createUserRoom: CreateUserRoom,
+  initialStack: number = 100
 ) => {
   const { roomId, userId, host, name } = createUserRoom;
   const userRoom = await context.prisma.user_Room.create({
@@ -12,6 +13,7 @@ export const createUserRoom = async (
       userId,
       host,
       name,
+      initialStack,
     },
   });
   return userRoom;

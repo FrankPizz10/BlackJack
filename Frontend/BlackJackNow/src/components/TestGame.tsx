@@ -4,19 +4,37 @@ import { StartGame } from '@shared-types/db/Game';
 import { RoomData } from '@shared-types/db/Room';
 import { UserRoom } from '@shared-types/db/UserRoom';
 import { JoinRoom } from '@shared-types/db/Room';
+import { ActionEvent, Event } from '@shared-types/Action';
+import { UserSeat } from '@shared-types/db/UserSeat';
+import { ActionType } from '@shared-types/ActionType';
+import { GameState } from '@shared-types/GameState';
+import { Card } from '@shared-types/Card';
+import { computeHandCount } from '@shared-types/Hand';
+
+const positionHelper = (seat: UserSeat | null) => {
+  return seat && seat.position ? seat.position - 1 : 0;
+};
 
 const TestGame = () => {
   const { socket } = useSocket();
   const [roomData, setRoomData] = useState<RoomData | null>(null);
   const [userRoomData, setUserRoomData] = useState<UserRoom | null>(null);
+  const [userSeatData, setUserSeatData] = useState<UserSeat | null>(null);
   const [joinRoomData, setJoinRoomData] = useState<JoinRoom | null>(null);
+  const [betAmount, setBetAmount] = useState(0);
+  const [startBetting, setStartBetting] = useState(false);
+  const [cardsDealt, setCardsDealt] = useState(false);
+  const [userCards, setUserCards] = useState<Card[]>([]);
+  const [dealerCards, setDealerCards] = useState<Card[]>([]);
+  const [gameState, setGameState] = useState<GameState | null>(null);
 
   useEffect(() => {
     if (!socket) return;
     socket.on('roomCreated', (data: StartGame) => {
-      const { roomDb, userRoomDb } = data;
+      const { roomDb, userRoomDb, userSeatDb } = data;
       setRoomData(roomDb);
       setUserRoomData(userRoomDb);
+      setUserSeatData(userSeatDb);
       console.log('Room created: ', data);
     });
     socket.on('roomJoined', (data: UserRoom) => {
@@ -25,10 +43,26 @@ const TestGame = () => {
       }
       console.log('Room joined: ', data);
     });
-    socket.on('gameState', (data) => {
-      console.log('Received game state:', data);
+    socket.on('gameStarted', () => {
+      console.log('Game started');
+      setStartBetting(true);
     });
-  }, [socket]);
+    socket.on('betsPlaced', () => {
+      console.log('Bets placed');
+      setStartBetting(false);
+    });
+    socket.on('cardsDealt', () => {
+      console.log('Cards dealt');
+      setCardsDealt(true);
+    });
+    socket.on('gameState', (gs: GameState) => {
+      console.log('Received game state:', gs);
+      if (!gs) return;
+      setUserCards(gs.seats[positionHelper(userSeatData)].hands[0].cards);
+      setDealerCards(gs.dealerHand);
+      setGameState(gs);
+    });
+  }, [socket, userSeatData]);
 
   if (!socket) {
     return <div>No socket</div>;
@@ -38,8 +72,8 @@ const TestGame = () => {
   };
 
   const startGame = async () => {
-    if (!roomData || !userRoomData) return;
-    const startGame: StartGame = { roomDb: roomData, userRoomDb: userRoomData };
+    if (!roomData) return;
+    const startGame: Event = { roomUrl: roomData.url };
     console.log('Starting game: ', startGame);
     socket.emit('startGame', startGame);
   };
@@ -50,15 +84,154 @@ const TestGame = () => {
     socket.emit('joinRoom', joinRoomData);
   };
 
+  const takeAction = async (actionType: ActionType) => {
+    if (!roomData || !userRoomData) return;
+    let action: ActionEvent;
+    if (actionType === 'Bet') {
+      action = {
+        roomUrl: roomData.url,
+        actionType: actionType,
+        bet: {
+          betAmount: betAmount,
+          bettingSeat: positionHelper(userSeatData),
+        },
+      };
+      console.log('Action Bet: ', action);
+    } else if (actionType === 'Hit') {
+      console.log('Action Hit: ', actionType);
+      action = {
+        roomUrl: roomData.url,
+        actionType: actionType,
+        bet: null,
+      };
+    } else if (actionType === 'Stand') {
+      console.log('Action Stand: ', actionType);
+      action = {
+        roomUrl: roomData.url,
+        actionType: actionType,
+        bet: null,
+      };
+    } else if (actionType === 'Reset') {
+      console.log('Action Reset: ', actionType);
+      action = {
+        roomUrl: roomData.url,
+        actionType: actionType,
+        bet: null,
+      };
+      setStartBetting(true);
+      setCardsDealt(false);
+    } else {
+      return;
+    }
+    console.log('Emitting action: ', action);
+    socket.emit('takeAction', action);
+  };
+
+  const handleBetAmount = (amount: string) => {
+    setBetAmount(parseInt(amount));
+  };
+
   return (
     <div>
-      <button onClick={() => createRoom()}>Create Room</button>
-      <button onClick={() => startGame()}>Start Game</button>
-      <input
-        type="text"
-        onChange={(e) => setJoinRoomData({ roomUrl: e.target.value })}
-      />
-      <button onClick={() => joinRoom()}>Join Room</button>
+      <h1>Test Game</h1>
+      {!roomData && !userRoomData && (
+        <>
+          <button onClick={() => createRoom()}>Create Room</button>
+          <button onClick={() => joinRoom()}>Join Room</button>
+          <input
+            type="text"
+            onChange={(e) => setJoinRoomData({ roomUrl: e.target.value })}
+          />
+        </>
+      )}
+      {roomData && userRoomData && !startBetting && !cardsDealt && (
+        <button onClick={() => startGame()}>Start Game</button>
+      )}
+
+      {startBetting && (
+        <div>
+          <button onClick={() => takeAction('Bet')}>Bet</button>
+          <input
+            type="number"
+            onChange={(e) => handleBetAmount(e.target.value)}
+          />
+        </div>
+      )}
+      {cardsDealt && (
+        <>
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              <h2>Dealer Count: {computeHandCount(dealerCards)}</h2>
+              {computeHandCount(dealerCards) > 21 && <h2>Dealer Bust</h2>}
+              {dealerCards.map((card, index) => (
+                <div
+                  key={card.suit + card.card + index}
+                  style={{ display: 'flex' }}
+                >
+                  <p>{card.suit}</p>
+                  <p>{card.card}</p>
+                </div>
+              ))}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              <h2>Player Count: {computeHandCount(userCards)}</h2>
+              {computeHandCount(userCards) > 21 && <h2>Player Bust</h2>}
+              {gameState?.seats[positionHelper(userSeatData)].hands[0]
+                .isBlackjack && <h2>BlackJack!</h2>}
+              {gameState?.seats[positionHelper(userSeatData)].hands[0].isDone &&
+                gameState?.seats[positionHelper(userSeatData)].hands[0]
+                  .isWon && <h2>Player Won</h2>}
+              {gameState?.seats[positionHelper(userSeatData)].hands[0].isDone &&
+                !gameState?.seats[positionHelper(userSeatData)].hands[0]
+                  .isWon &&
+                !gameState?.seats[positionHelper(userSeatData)].hands[0]
+                  .isPush && <h2>Player Lost</h2>}
+              {gameState?.seats[positionHelper(userSeatData)].hands[0].isDone &&
+                gameState?.seats[positionHelper(userSeatData)].hands[0]
+                  .isPush && <h2>Player Push</h2>}
+              {userCards.map((card, index) => (
+                <div
+                  key={card.suit + card.card + index}
+                  style={{ display: 'flex' }}
+                >
+                  <p>{card.suit}</p>
+                  <p>{card.card}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div>
+              {!gameState?.roundOver && (
+                <>
+                  <button onClick={() => takeAction('Hit')}>Hit</button>
+                  <button onClick={() => takeAction('Stand')}>Stand</button>
+                </>
+              )}
+            </div>
+            {gameState?.roundOver && (
+              <button onClick={() => takeAction('Reset')}>Reset</button>
+            )}
+          </div>
+        </>
+      )}
+      {gameState?.seats[positionHelper(userSeatData)].player.stack && (
+        <h1>
+          Stack: {gameState?.seats[positionHelper(userSeatData)].player.stack}
+        </h1>
+      )}
     </div>
   );
 };

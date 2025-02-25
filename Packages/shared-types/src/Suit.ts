@@ -1,1 +1,1 @@
-export type Suit = 'H' | 'D' | 'C' | 'S' | 'CUT';
+export type Suit = 'H' | 'D' | 'C' | 'S' | 'CUT' | 'HIDDEN';

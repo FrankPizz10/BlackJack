@@ -2,7 +2,7 @@ import { Server } from 'socket.io';
 import { AppContext } from '../context';
 import { startTurn } from '../services/gameStateService';
 import { Queue } from 'bullmq';
-import { GameState } from '@shared-types/GameState';
+import { GameState, removeFaceDownCards } from '@shared-types/GameState';
 
 export const subscribeToRedisChannel = (
   io: Server,
@@ -21,7 +21,10 @@ export const subscribeToRedisChannel = (
     // check if message is from gameState channel
     if (channel === 'channel:gameStateUpdates') {
       const gameState: GameState = JSON.parse(message);
-      console.log('Subscriber received message:', gameState);
+      console.log(
+        'Subscriber received message with roomId:',
+        gameState.rommDbId
+      );
       const roomDb = await context.prisma.rooms.findUniqueOrThrow({
         where: { id: gameState.rommDbId },
       });
@@ -33,7 +36,7 @@ export const subscribeToRedisChannel = (
         return;
       }
       // broadcast game state
-      io.to(roomDb.url).emit('gameState', gameState);
+      io.to(roomDb.url).emit('gameState', removeFaceDownCards(gameState));
     }
   });
 };
