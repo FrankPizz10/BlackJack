@@ -62,7 +62,7 @@ const TestGame = () => {
       setDealerCards(gs.dealerHand);
       setGameState(gs);
     });
-  }, [socket]);
+  }, [socket, userSeatData]);
 
   if (!socket) {
     return <div>No socket</div>;

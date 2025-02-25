@@ -11,17 +11,13 @@ import {
   takeAction,
 } from '@shared-types/GameState';
 import { ActionEvent, Action } from '@shared-types/Action';
-import {
-  RoomWithUsersAndSeats,
-  UserRoomWithSeat,
-} from '@shared-types/db/UserRoom';
+import { RoomWithUsersAndSeats } from '@shared-types/db/UserRoom';
 
 export const startGame = async (
   io: Server,
   context: AppContext,
   turnQueue: Queue,
-  roomWithUsersAndSeats: RoomWithUsersAndSeats,
-  currentUserInfo: UserRoomWithSeat
+  roomWithUsersAndSeats: RoomWithUsersAndSeats
 ) => {
   console.log('Starting game...');
   try {

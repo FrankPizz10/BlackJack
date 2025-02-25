@@ -58,13 +58,7 @@ export const registerSocketEvents = (
       socket.emit('error', 'User is not the host');
       return;
     }
-    startGame(
-      io,
-      context,
-      turnQueue,
-      roomWithUsersAndSeats,
-      currentUserRoomAndSeat
-    );
+    startGame(io, context, turnQueue, roomWithUsersAndSeats);
   });
   socket.on('joinRoom', (joinRoomData: JoinRoom) => {
     const result = joinRoomSchema.safeParse(joinRoomData);
