@@ -62,7 +62,6 @@ export const handleTakeAction = async (
     if (!gameStateRaw) return console.error('Game state not found');
 
     const gameState: GameState = JSON.parse(gameStateRaw);
-    console.log('Action Game state:', gameState);
     if (!gameState) return console.error('Game state invalid');
     // Update game state
     const action: Action = {

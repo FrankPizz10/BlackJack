@@ -1,6 +1,6 @@
 import { Card } from './Card';
 
-export type Hand = {
+export type Hand = Readonly<{
   cards: Card[];
   bet: number;
   isCurrentHand: boolean;
@@ -8,9 +8,9 @@ export type Hand = {
   isWon?: boolean;
   isPush?: boolean;
   isBlackjack?: boolean;
-};
+}>;
 
-export const computeHandCount = (cards: Card[]): number => {
+export const computeHandCount = (cards: ReadonlyArray<Card>): number => {
   let total = 0;
   let aces = 0;
 

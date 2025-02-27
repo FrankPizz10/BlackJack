@@ -25,7 +25,7 @@ const TestGame = () => {
   const [startBetting, setStartBetting] = useState(false);
   const [cardsDealt, setCardsDealt] = useState(false);
   const [userCards, setUserCards] = useState<Card[]>([]);
-  const [dealerCards, setDealerCards] = useState<Card[]>([]);
+  const [dealerCards, setDealerCards] = useState<ReadonlyArray<Card>>([]);
   const [gameState, setGameState] = useState<GameState | null>(null);
 
   useEffect(() => {
@@ -62,12 +62,13 @@ const TestGame = () => {
       setDealerCards(gs.dealerHand);
       setGameState(gs);
     });
-  }, [socket, userSeatData]);
+  }, [socket]);
 
   if (!socket) {
     return <div>No socket</div>;
   }
   const createRoom = async () => {
+    console.log('Creating room');
     socket.emit('createRoom');
   };
 

@@ -1,8 +1,8 @@
 import { Suit } from './Suit';
 import { CardValue } from './CardValue';
 
-export interface Card {
-  suit: Suit;
-  card: CardValue;
+export type Card = Readonly<{
+  suit: Readonly<Suit>;
+  card: Readonly<CardValue>;
   faceUp: boolean;
-}
+}>;

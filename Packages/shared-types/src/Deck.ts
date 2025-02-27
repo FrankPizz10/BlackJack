@@ -2,11 +2,11 @@ import { Card } from './Card';
 import { Suit } from './Suit';
 import { CardValue } from './CardValue';
 
-export type Deck = {
-  baseDeck: Card[];
-  currentDeck: Card[];
+export type Deck = Readonly<{
+  baseDeck: ReadonlyArray<Card>;
+  currentDeck: ReadonlyArray<Card>;
   numDecks: number;
-};
+}>;
 
 export const generateBaseDeck = (): Card[] => {
   const suits: Suit[] = ['H', 'D', 'C', 'S'];
@@ -43,21 +43,23 @@ export const createDeck = (numDecks: number = 1): Deck => {
 };
 
 export const shuffle = (deck: Deck): Deck => {
-  for (let i = deck.baseDeck.length - 1; i > 0; i--) {
+  const shuffledDeck = [...deck.baseDeck];
+  for (let i = shuffledDeck.length - 1; i > 0; i--) {
     const randomIndex = Math.floor(Math.random() * (i + 1));
-    [deck.baseDeck[i], deck.baseDeck[randomIndex]] = [
-      deck.baseDeck[randomIndex],
-      deck.baseDeck[i],
+    [shuffledDeck[i], shuffledDeck[randomIndex]] = [
+      shuffledDeck[randomIndex],
+      shuffledDeck[i],
     ];
   }
-  deck.currentDeck = [...deck.baseDeck];
-  return deck;
+  return { ...deck, currentDeck: [...shuffledDeck] };
 };
 
-export const draw = (deck: Deck): Card | null => {
+export const draw = (deck: Deck): { card: Card; deck: Deck } | null => {
   if (deck.currentDeck.length === 0) {
     return null;
   }
-  const drawnCard = deck.currentDeck.shift(); // Removes the top card from currentDeck
-  return drawnCard || null; // Ensures null is returned if shift() somehow fails
+  return {
+    card: deck.currentDeck[0], // Grabs the top card
+    deck: { ...deck, currentDeck: deck.currentDeck.slice(1) },
+  };
 };
