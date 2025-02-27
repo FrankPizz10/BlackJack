@@ -1,8 +1,8 @@
 import { Suit } from './Suit';
-import { CardValue } from './CardValue';
+import { CardValueType } from './CardValue';
 
 export type Card = Readonly<{
   suit: Readonly<Suit>;
-  card: Readonly<CardValue>;
+  value: CardValueType;
   faceUp: boolean;
 }>;

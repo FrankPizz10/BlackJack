@@ -6,7 +6,7 @@ import { ActionType } from './ActionType';
 import { Action } from './Action';
 import { Bet } from './Bet';
 import { Player } from './Player';
-import { RoomWithUsersAndSeats, UserRoomWithSeat } from './db/UserRoom';
+import { RoomWithUsersAndSeats, UserRoomWithSeat } from '../db/UserRoom';
 
 // GameState.ts will be stored in Redis Cache
 // Redis Key for the Gamestate will look like Game:{roomId}
@@ -29,7 +29,7 @@ const drawCard = (
   const drawResult = draw(deck);
   if (!drawResult) return null;
   let card = drawResult.card;
-  let newDeck = drawResult.deck;
+  const newDeck = drawResult.deck;
   if (card && card.suit === 'CUT') {
     const drawCutResult = draw(newDeck);
     if (!drawCutResult) return null;
@@ -60,14 +60,14 @@ export const checkEligibleAction = (gs: GameState): ActionType[] => {
   // Allow Split if hand has two of the same card and the player has enough stack
   if (
     hand.cards.length === 2 &&
-    hand.cards[0].card === hand.cards[1].card &&
+    hand.cards[0].value === hand.cards[1].value &&
     seat.player.stack >= hand.bet
   ) {
     actions.push('Split');
   }
 
   // Allow Double Down if the hand total is 9, 10, 11 (without an Ace) or 16-18 (with an Ace) and the player has enough stack
-  const hasAce = hand.cards.some((card) => card.card === 'A');
+  const hasAce = hand.cards.some((card) => card.value === 'A');
   if (
     ((!hasAce && [9, 10, 11].includes(total)) ||
       (hasAce && [16, 17, 18].includes(total))) &&
@@ -89,7 +89,7 @@ export const handleDealer = (
     faceUp: true,
   }));
   let dealerTotal = computeHandCount(gs.dealerHand);
-  let hasAce = updatedDealerHand.some((card) => card.card === 'A');
+  let hasAce = updatedDealerHand.some((card) => card.value === 'A');
   let currentGs: GameState = { ...gs, dealerHand: updatedDealerHand };
   // Draw cards while the dealer total is less than or equal to 16
   while (dealerTotal <= 16 || (dealerTotal === 17 && hasAce)) {
@@ -99,7 +99,7 @@ export const handleDealer = (
     currentGs = cardResult.gs;
     updatedDealerHand = [...updatedDealerHand, { ...card, faceUp: true }];
     dealerTotal = computeHandCount(updatedDealerHand);
-    hasAce = updatedDealerHand.some((card) => card.card === 'A');
+    hasAce = updatedDealerHand.some((card) => card.value === 'A');
     currentGs = { ...currentGs, dealerHand: updatedDealerHand };
   }
 
@@ -369,39 +369,45 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
   let isDone = false;
   let gamestateAfterAction: GameState | null = null;
   switch (action.actionType) {
-    case 'Hit':
+    case 'Hit': {
       const hitResult = handleHit(gs, seat, currentHand);
       isDone = hitResult.isDone;
       gamestateAfterAction = hitResult.gs;
       break;
-    case 'Stand':
+    }
+    case 'Stand': {
       const standResult = handleStay(gs, seat, currentHand);
       isDone = standResult.isDone;
       gamestateAfterAction = standResult.gs;
       break;
-    case 'Double Down':
+    }
+    case 'Double Down': {
       const doubleDownResult = handleDoubleDown(gs, seat, currentHand);
       isDone = doubleDownResult.isDone;
       gamestateAfterAction = doubleDownResult.gs;
       break;
-    case 'Split':
+    }
+    case 'Split': {
       const splitResult = handleSplit(gs, seat, currentHand);
       isDone = splitResult.isDone;
       gamestateAfterAction = splitResult.gs;
       break;
-    case 'Deal':
+    }
+    case 'Deal': {
       const dealResult = handleHit(gs, seat, currentHand);
       isDone = dealResult.isDone;
       gamestateAfterAction = dealResult.gs;
       break;
+    }
     // case 'CheckHand':
     //   isDone = handleCheckHand(gs, seat, current_hand);
     //   break;
-    case 'Dealer':
+    case 'Dealer': {
       const dealerResult = handleDealer(gs);
       isDone = dealerResult.isDone;
       gamestateAfterAction = dealerResult.gs;
       break;
+    }
     // case 'ForceShuffle':
     //   gs.shuffle = true;
     //   break;
@@ -710,21 +716,21 @@ export const removeFaceDownCards = (gameState: GameState): GameState => {
         ...hand,
         cards: hand.cards.map((card) => ({
           ...card,
-          card: card.faceUp ? card.card : 'HIDDEN',
+          value: card.faceUp ? card.value : 'HIDDEN',
           suit: card.faceUp ? card.suit : 'HIDDEN',
         })),
       })),
     })),
     dealerHand: gameState.dealerHand.map((card) => ({
       ...card,
-      card: card.faceUp ? card.card : 'HIDDEN',
+      value: card.faceUp ? card.value : 'HIDDEN',
       suit: card.faceUp ? card.suit : 'HIDDEN',
     })),
     deck: {
       ...gameState.deck,
       currentDeck: gameState.deck.currentDeck.map((card) => ({
         ...card,
-        card: card.faceUp ? card.card : 'HIDDEN',
+        value: card.faceUp ? card.value : 'HIDDEN',
         suit: card.faceUp ? card.suit : 'HIDDEN',
       })),
     },

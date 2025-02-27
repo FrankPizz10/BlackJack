@@ -1,7 +1,7 @@
 import { QueueEvents, Worker } from 'bullmq';
 import Redis from 'ioredis';
 import dotenv from 'dotenv';
-import { GameState } from '@shared-types/GameState';
+import { GameState } from '@shared-types/Game/GameState';
 
 dotenv.config();
 

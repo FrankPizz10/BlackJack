@@ -1,7 +1,7 @@
 import { Card } from './Card';
 
 export type Hand = Readonly<{
-  cards: Card[];
+  cards: ReadonlyArray<Card>;
   bet: number;
   isCurrentHand: boolean;
   isDone: boolean;
@@ -15,15 +15,15 @@ export const computeHandCount = (cards: ReadonlyArray<Card>): number => {
   let aces = 0;
 
   for (const card of cards) {
-    if (card.card === 'A') {
+    if (card.value === 'A') {
       total += 11;
       aces++;
-    } else if (['K', 'Q', 'J', '10'].includes(card.card)) {
+    } else if (['K', 'Q', 'J', '10'].includes(card.value)) {
       total += 10;
-    } else if (card.card === 'HIDDEN') {
+    } else if (card.value === 'HIDDEN') {
       total += 0;
     } else {
-      total += parseInt(card.card, 10);
+      total += parseInt(card.value, 10);
     }
   }
 
@@ -34,8 +34,4 @@ export const computeHandCount = (cards: ReadonlyArray<Card>): number => {
   }
 
   return total;
-};
-
-export const testHand = (): void => {
-  console.log('Test');
 };

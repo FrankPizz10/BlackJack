@@ -1,6 +1,6 @@
 import { Card } from './Card';
 import { Suit } from './Suit';
-import { CardValue } from './CardValue';
+import { CardValue, CardValueType } from './CardValue';
 
 export type Deck = Readonly<{
   baseDeck: ReadonlyArray<Card>;
@@ -8,25 +8,19 @@ export type Deck = Readonly<{
   numDecks: number;
 }>;
 
+const excludedCardTypes = ['CUT', 'HIDDEN'];
+
 export const generateBaseDeck = (): Card[] => {
-  const suits: Suit[] = ['H', 'D', 'C', 'S'];
-  const cards: CardValue[] = [
-    '2',
-    '3',
-    '4',
-    '5',
-    '6',
-    '7',
-    '8',
-    '9',
-    '10',
-    'J',
-    'Q',
-    'K',
-    'A',
-  ];
+  const suits: Suit[] = Object.values(Suit).filter(
+    (suit) => !excludedCardTypes.includes(suit)
+  );
+  const cards: CardValueType[] = Object.values(CardValue).filter(
+    (value) => !excludedCardTypes.includes(value)
+  );
   const faceUp = false;
-  return suits.flatMap((suit) => cards.map((card) => ({ suit, card, faceUp })));
+  return suits.flatMap((suit) =>
+    cards.map((value) => ({ suit, value, faceUp }))
+  );
 };
 
 export const createDeck = (numDecks: number = 1): Deck => {
@@ -35,7 +29,7 @@ export const createDeck = (numDecks: number = 1): Deck => {
     .flatMap(() => generateBaseDeck());
 
   // Insert the cut card at a random position
-  const cutCard: Card = { suit: 'CUT', card: '1', faceUp: false };
+  const cutCard: Card = { suit: 'CUT', value: 'CUT', faceUp: false };
   const randomIndex = Math.floor(Math.random() * (baseDeck.length + 1));
   baseDeck.splice(randomIndex, 0, cutCard);
 

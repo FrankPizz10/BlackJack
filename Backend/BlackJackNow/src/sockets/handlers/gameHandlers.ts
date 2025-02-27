@@ -9,8 +9,8 @@ import {
   removeFaceDownCards,
   checkDealReady,
   takeAction,
-} from '@shared-types/GameState';
-import { ActionEvent, Action } from '@shared-types/Action';
+} from '@shared-types/Game/GameState';
+import { ActionEvent, Action } from '@shared-types/Game/Action';
 import { RoomWithUsersAndSeats } from '@shared-types/db/UserRoom';
 
 export const startGame = async (
