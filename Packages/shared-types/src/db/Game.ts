@@ -10,4 +10,10 @@ export const startGameSchema = z.object({
   userSeatDb: userSeatSchema,
 });
 
+export const roomJoinedSchema = z.object({
+  roomDb: roomSchema,
+  userRoomDb: userRoomSchema,
+});
+
 export type StartGame = z.infer<typeof startGameSchema>;
+export type RoomJoined = z.infer<typeof roomJoinedSchema>;

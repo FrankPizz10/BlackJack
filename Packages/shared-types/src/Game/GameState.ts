@@ -523,24 +523,26 @@ const createSeats = (
   userRooms: UserRoomWithSeat[],
   gameTableId: number
 ): Seat[] => {
-  return userRooms.map((userRoom) => ({
-    hands: [
-      {
-        cards: [],
-        bet: 0,
-        isCurrentHand: true,
-        isDone: false,
+  return userRooms.flatMap((userRoom) =>
+    userRoom.UserSeats.map((seat) => ({
+      hands: [
+        {
+          cards: [],
+          bet: 0,
+          isCurrentHand: true,
+          isDone: false,
+        },
+      ],
+      isTurn: seat.position === 1,
+      isAfk: false,
+      player: {
+        user_ID: userRoom.userId,
+        stack: userRoom.initialStack,
+        userRoomDbId: userRoom.roomId,
+        gameTableDbId: gameTableId,
       },
-    ],
-    isTurn: userRoom.UserSeat.position === 1,
-    isAfk: false,
-    player: {
-      user_ID: userRoom.userId,
-      stack: userRoom.initialStack,
-      userRoomDbId: userRoom.roomId,
-      gameTableDbId: gameTableId,
-    },
-  }));
+    }))
+  );
 };
 
 // Begin to deal cards for the game

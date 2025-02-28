@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSocket } from '../customHooks/useSocket';
-import { StartGame } from '@shared-types/db/Game';
+import { StartGame, RoomJoined } from '@shared-types/db/Game';
 import { RoomData } from '@shared-types/db/Room';
 import { UserRoom } from '@shared-types/db/UserRoom';
 import { JoinRoom } from '@shared-types/db/Room';
@@ -37,10 +37,10 @@ const TestGame = () => {
       setUserSeatData(userSeatDb);
       console.log('Room created: ', data);
     });
-    socket.on('roomJoined', (data: UserRoom) => {
-      if (data.name === socket.id) {
-        setUserRoomData(data);
-      }
+    socket.on('roomJoined', (data: RoomJoined) => {
+      const { roomDb, userRoomDb } = data;
+      setRoomData(roomDb);
+      setUserRoomData(userRoomDb);
       console.log('Room joined: ', data);
     });
     socket.on('gameStarted', () => {

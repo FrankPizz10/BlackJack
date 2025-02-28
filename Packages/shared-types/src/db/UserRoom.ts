@@ -20,7 +20,7 @@ export const createUserRoomSchema = z.object({
 });
 
 export type UserRoom = z.infer<typeof userRoomSchema>;
-export type UserRoomWithSeat = UserRoom & { UserSeat: UserSeat };
+export type UserRoomWithSeat = UserRoom & { UserSeats: UserSeat[] };
 export type CreateUserRoom = z.infer<typeof createUserRoomSchema>;
 
 export type RoomWithUsersAndSeats = RoomData & {

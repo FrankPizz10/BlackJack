@@ -32,19 +32,10 @@ export const registerSocketEvents = (
       socket.emit('error', 'User not in room');
       return;
     }
-    const roomInfo = await getRoomInfoByUrl(context, startGameEvent.roomUrl)!;
-    const roomWithUsersAndSeats: RoomWithUsersAndSeats = {
-      ...roomInfo.roomDb,
-      UserRooms: roomInfo.roomDb.UserRoom.map((userRoom) => ({
-        id: userRoom.id,
-        userId: userRoom.userId,
-        roomId: userRoom.roomId,
-        host: userRoom.host,
-        name: userRoom.name,
-        initialStack: userRoom.initialStack || 100,
-        UserSeat: userRoom.Seats!,
-      })),
-    };
+    const roomWithUsersAndSeats = await getRoomInfoByUrl(
+      context,
+      startGameEvent.roomUrl
+    )!;
     const currentUserRoomAndSeat = roomWithUsersAndSeats.UserRooms.find(
       (userRoom) => userRoom.userId === user.id
     );

@@ -2,7 +2,7 @@ import { Server, Socket } from 'socket.io';
 import { DbUser } from '@shared-types/db/User';
 import { CustomSocket } from '../index';
 import { AppContext } from '../../context';
-import { createRoom } from '../../services/roomsService';
+import { createRoom, getRoomInfoByUrl } from '../../services/roomsService';
 import { createUserRoom } from '../../services/userRoomService';
 import {
   CreateUserRoom,
@@ -89,7 +89,11 @@ export const handleJoinRoom = async (
     name: socket.id,
     initialStack: 100,
   };
-  const userRoom = await createUserRoom(context, userRoomData);
+  await createUserRoom(context, userRoomData);
+  const roomWithUsersAndSeats = await getRoomInfoByUrl(
+    context,
+    joinRoomData.roomUrl
+  );
   // join room
   socket.join(joinRoomData.roomUrl);
   // Store the room ID inside socket.data
@@ -97,7 +101,7 @@ export const handleJoinRoom = async (
   // update redis game state
   try {
     // broadcast player joined room
-    io.to(joinRoomData.roomUrl).emit('roomJoined', userRoom);
+    io.to(joinRoomData.roomUrl).emit('roomJoined', roomWithUsersAndSeats);
   } catch (err) {
     console.error('Error updating game state:', err);
   }

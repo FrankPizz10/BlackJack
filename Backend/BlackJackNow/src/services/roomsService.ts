@@ -2,6 +2,7 @@ import { CreateRoomData } from '@shared-types/db/Room';
 import { AppContext } from '../context';
 import { generateRoomUrl } from '../utils/crypto';
 import { createGameTable } from './gameTableService';
+import { RoomWithUsersAndSeats } from '@shared-types/db/UserRoom';
 
 export const getRooms = async (context: AppContext) => {
   try {
@@ -67,7 +68,31 @@ export const getRoomInfoByUrl = async (context: AppContext, url: string) => {
         UserRoom: { include: { Seats: true } },
       },
     });
-    return { roomDb };
+    const roomWithUsersAndSeats: RoomWithUsersAndSeats = {
+      id: roomDb.id,
+      url: roomDb.url,
+      gameTableId: roomDb.gameTableId,
+      roomOpenTime: roomDb.roomOpenTime,
+      roomCloseTime: roomDb.roomCloseTime,
+      maxRoomSize: roomDb.maxRoomSize,
+      UserRooms: roomDb.UserRoom.map((userRoom) => ({
+        id: userRoom.id,
+        userId: userRoom.userId,
+        roomId: userRoom.roomId,
+        host: userRoom.host,
+        name: userRoom.name,
+        initialStack: userRoom.initialStack || 100,
+        UserSeats: userRoom.Seats.map((seat) => ({
+          id: seat.id,
+          position: seat.position,
+          userRoomId: seat.userRoomId,
+          handsPlayed: seat.handsPlayed,
+          handsWon: seat.handsWon,
+          blackjacks: seat.blackjacks || 0,
+        })),
+      })),
+    };
+    return roomWithUsersAndSeats;
   } catch (error) {
     console.error('Error fetching room:', error);
     throw error;
