@@ -4,12 +4,12 @@ import { StartGame } from '@shared-types/db/Game';
 import { RoomData } from '@shared-types/db/Room';
 import { UserRoom } from '@shared-types/db/UserRoom';
 import { JoinRoom } from '@shared-types/db/Room';
-import { ActionEvent, Event } from '@shared-types/Action';
+import { ActionEvent, Event } from '@shared-types/Game/Action';
 import { UserSeat } from '@shared-types/db/UserSeat';
-import { ActionType } from '@shared-types/ActionType';
-import { GameState } from '@shared-types/GameState';
-import { Card } from '@shared-types/Card';
-import { computeHandCount } from '@shared-types/Hand';
+import { ActionType } from '@shared-types/Game/ActionType';
+import { GameState } from '@shared-types/Game/GameState';
+import { Card } from '@shared-types/Game/Card';
+import { computeHandCount } from '@shared-types/Game/Hand';
 
 const positionHelper = (seat: UserSeat | null) => {
   return seat && seat.position ? seat.position - 1 : 0;
@@ -25,7 +25,7 @@ const TestGame = () => {
   const [startBetting, setStartBetting] = useState(false);
   const [cardsDealt, setCardsDealt] = useState(false);
   const [userCards, setUserCards] = useState<Card[]>([]);
-  const [dealerCards, setDealerCards] = useState<Card[]>([]);
+  const [dealerCards, setDealerCards] = useState<ReadonlyArray<Card>>([]);
   const [gameState, setGameState] = useState<GameState | null>(null);
 
   useEffect(() => {
@@ -58,16 +58,17 @@ const TestGame = () => {
     socket.on('gameState', (gs: GameState) => {
       console.log('Received game state:', gs);
       if (!gs) return;
-      setUserCards(gs.seats[positionHelper(userSeatData)].hands[0].cards);
+      setUserCards([...gs.seats[positionHelper(userSeatData)].hands[0].cards]);
       setDealerCards(gs.dealerHand);
       setGameState(gs);
     });
-  }, [socket, userSeatData]);
+  }, [socket]);
 
   if (!socket) {
     return <div>No socket</div>;
   }
   const createRoom = async () => {
+    console.log('Creating room');
     socket.emit('createRoom');
   };
 
@@ -171,11 +172,11 @@ const TestGame = () => {
               {computeHandCount(dealerCards) > 21 && <h2>Dealer Bust</h2>}
               {dealerCards.map((card, index) => (
                 <div
-                  key={card.suit + card.card + index}
+                  key={card.suit + card.value + index}
                   style={{ display: 'flex' }}
                 >
                   <p>{card.suit}</p>
-                  <p>{card.card}</p>
+                  <p>{card.value}</p>
                 </div>
               ))}
             </div>
@@ -203,11 +204,11 @@ const TestGame = () => {
                   .isPush && <h2>Player Push</h2>}
               {userCards.map((card, index) => (
                 <div
-                  key={card.suit + card.card + index}
+                  key={card.suit + card.value + index}
                   style={{ display: 'flex' }}
                 >
                   <p>{card.suit}</p>
-                  <p>{card.card}</p>
+                  <p>{card.value}</p>
                 </div>
               ))}
             </div>

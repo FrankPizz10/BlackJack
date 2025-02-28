@@ -5,7 +5,7 @@ import { DbUser } from '@shared-types/db/User';
 import { handleCreateRoom, handleJoinRoom } from './handlers/roomHandlers';
 import { handleTakeAction, startGame } from './handlers/gameHandlers';
 import { JoinRoom, joinRoomSchema } from '@shared-types/db/Room';
-import { ActionEvent, eventSchema, Event } from '@shared-types/Action';
+import { ActionEvent, eventSchema, Event } from '@shared-types/Game/Action';
 import { CustomSocket } from '.';
 import { getRoomInfoByUrl } from '../services/roomsService';
 import { RoomWithUsersAndSeats } from '@shared-types/db/UserRoom';

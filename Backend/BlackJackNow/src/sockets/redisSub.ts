@@ -2,7 +2,7 @@ import { Server } from 'socket.io';
 import { AppContext } from '../context';
 import { startTurn } from '../services/gameStateService';
 import { Queue } from 'bullmq';
-import { GameState, removeFaceDownCards } from '@shared-types/GameState';
+import { GameState, removeFaceDownCards } from '@shared-types/Game/GameState';
 
 export const subscribeToRedisChannel = (
   io: Server,
