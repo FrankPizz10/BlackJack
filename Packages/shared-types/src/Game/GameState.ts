@@ -61,6 +61,7 @@ export const checkEligibleAction = (gs: GameState): ActionType[] => {
   if (
     hand.cards.length === 2 &&
     hand.cards[0].value === hand.cards[1].value &&
+    seat.player &&
     seat.player.stack >= hand.bet
   ) {
     actions.push('Split');
@@ -71,6 +72,7 @@ export const checkEligibleAction = (gs: GameState): ActionType[] => {
   if (
     ((!hasAce && [9, 10, 11].includes(total)) ||
       (hasAce && [16, 17, 18].includes(total))) &&
+    seat.player &&
     seat.player.stack >= hand.bet
   ) {
     actions.push('Double Down');
@@ -484,10 +486,17 @@ const payoutHands = (gs: GameState): GameState => {
     }, 0);
 
     // Create a new player object with the updated stack
-    const updatedPlayer = {
-      ...seat.player,
-      stack: seat.player.stack + winnings,
-    };
+    // const updatedPlayer = {
+    //   ...seat.player,
+    //   stack: seat.player ? seat.player.stack + winnings : 0,
+    // };
+
+    const updatedPlayer = seat.player
+      ? {
+          ...seat.player,
+          stack: seat.player.stack + winnings,
+        }
+      : null;
 
     // Return the updated seat object
     return {
@@ -521,28 +530,42 @@ export const createNewGameState = (
 
 const createSeats = (
   userRooms: UserRoomWithSeat[],
-  gameTableId: number
+  gameTableId: number,
+  totalSeats: number = 6 // Define the total number of seats at the table
 ): Seat[] => {
-  return userRooms.flatMap((userRoom) =>
-    userRoom.UserSeats.map((seat) => ({
-      hands: [
-        {
-          cards: [],
-          bet: 0,
-          isCurrentHand: true,
-          isDone: false,
-        },
-      ],
-      isTurn: seat.position === 1,
-      isAfk: false,
-      player: {
-        user_ID: userRoom.userId,
-        stack: userRoom.initialStack,
-        userRoomDbId: userRoom.roomId,
-        gameTableDbId: gameTableId,
+  // Initialize seats with empty placeholders
+  const seats: Seat[] = Array.from({ length: totalSeats }, (_, i) => ({
+    hands: [
+      {
+        cards: [],
+        bet: 0,
+        isCurrentHand: true,
+        isDone: false,
       },
-    }))
-  );
+    ],
+    isTurn: false,
+    isAfk: false,
+    player: null, // No player assigned initially
+  }));
+
+  // Assign players to their respective seats
+  userRooms.forEach((userRoom) => {
+    userRoom.UserSeats.forEach((seat) => {
+      const seatIndex = seat.position - 1; // Convert position to array index
+      seats[seatIndex] = {
+        ...seats[seatIndex], // Retain existing structure
+        isTurn: seat.position === 1, // First player has the turn
+        player: {
+          user_ID: userRoom.userId,
+          stack: userRoom.initialStack,
+          userRoomDbId: userRoom.roomId,
+          gameTableDbId: gameTableId,
+        },
+      };
+    });
+  });
+
+  return seats;
 };
 
 // Begin to deal cards for the game
@@ -550,7 +573,8 @@ export const dealCards = (gs: GameState): GameState => {
   // First round: deal one face-up card to each player
   let currentGs = gs;
   const newSeats: Seat[] = currentGs.seats.map((seat) => {
-    const cardResult = drawCard(gs.deck, gs);
+    if (!seat.player) return seat;
+    const cardResult = drawCard(currentGs.deck, currentGs);
     if (!cardResult) return seat;
     currentGs = cardResult.gs;
     return {
@@ -659,12 +683,16 @@ export const dealCards = (gs: GameState): GameState => {
   };
 };
 
-export const addPlayer = (gs: GameState, player: Player): GameState => {
+export const takeSeat = (
+  gs: GameState,
+  player: Player,
+  seatPosition: number
+): GameState => {
   // Return new game state
   return {
     ...gs,
     seats: [
-      ...gs.seats,
+      ...gs.seats.slice(0, seatPosition),
       {
         hands: [
           {
@@ -678,6 +706,7 @@ export const addPlayer = (gs: GameState, player: Player): GameState => {
         isAfk: false,
         player,
       },
+      ...gs.seats.slice(seatPosition + 1),
     ],
   };
 };
@@ -740,8 +769,9 @@ export const removeFaceDownCards = (gameState: GameState): GameState => {
 };
 
 export const checkDealReady = (gameState: GameState) => {
+  const occupiedSeats = gameState.seats.filter((seat) => seat.player !== null);
   return (
-    gameState.seats.every((seat) =>
+    occupiedSeats.every((seat) =>
       seat.hands.every((hand) => hand.bet > 0 && hand.cards.length < 1)
     ) && !gameState.roundOver
   );

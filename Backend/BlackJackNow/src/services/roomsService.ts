@@ -98,3 +98,23 @@ export const getRoomInfoByUrl = async (context: AppContext, url: string) => {
     throw error;
   }
 };
+
+export const createSeat = async (
+  context: AppContext,
+  url: string,
+  seatPosition: number,
+  userRoomId: number
+) => {
+  try {
+    const userSeat = await context.prisma.seats.create({
+      data: {
+        position: seatPosition,
+        userRoomId: userRoomId,
+      },
+    });
+    return userSeat;
+  } catch (error) {
+    console.error('Error taking seat:', error);
+    throw error;
+  }
+};

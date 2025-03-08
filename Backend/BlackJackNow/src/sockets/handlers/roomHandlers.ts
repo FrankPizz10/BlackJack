@@ -2,7 +2,11 @@ import { Server, Socket } from 'socket.io';
 import { DbUser } from '@shared-types/db/User';
 import { CustomSocket } from '../index';
 import { AppContext } from '../../context';
-import { createRoom, getRoomInfoByUrl } from '../../services/roomsService';
+import {
+  createRoom,
+  getRoomInfoByUrl,
+  createSeat,
+} from '../../services/roomsService';
 import { createUserRoom } from '../../services/userRoomService';
 import {
   CreateUserRoom,
@@ -10,8 +14,10 @@ import {
   userRoomSchema,
 } from '@shared-types/db/UserRoom';
 import { StartGame } from '@shared-types/db/Game';
-import { JoinRoom } from '@shared-types/db/Room';
+import { JoinRoom, TakeSeat } from '@shared-types/db/Room';
 import { createUserSeat } from '../../services/userSeatService';
+import { GameState, takeSeat } from '@shared-types/Game/GameState';
+import { Player } from '@shared-types/Game/Player';
 
 export const handleCreateRoom = async (
   io: Server,
@@ -102,6 +108,63 @@ export const handleJoinRoom = async (
   try {
     // broadcast player joined room
     io.to(joinRoomData.roomUrl).emit('roomJoined', roomWithUsersAndSeats);
+  } catch (err) {
+    console.error('Error updating game state:', err);
+  }
+};
+
+export const handleTakeSeat = async (
+  io: Server,
+  socket: Socket,
+  context: AppContext,
+  user: DbUser,
+  takeSeatData: TakeSeat
+) => {
+  console.log('Taking seat:', socket.id);
+  // Check if seat is available
+  const roomInfo = await getRoomInfoByUrl(context, takeSeatData.roomUrl);
+  if (!roomInfo) return;
+  if (roomInfo.UserRooms.length >= 7) {
+    console.log('Table is full');
+    socket.emit('error', 'Table is full');
+    return;
+  }
+  const seat = await createSeat(
+    context,
+    takeSeatData.roomUrl,
+    takeSeatData.seatPosition,
+    takeSeatData.userRoomId
+  );
+  if (!seat) {
+    console.error('Error taking seat');
+    socket.emit('error', 'Error taking seat');
+    return;
+  }
+  // update redis game state
+  try {
+    const gameStateRaw = await context.redis.get(
+      `gameState:${takeSeatData.roomUrl}`
+    );
+    if (!gameStateRaw) {
+      io.to(takeSeatData.roomUrl).emit('seatTaken', seat);
+      return;
+    }
+    const gameState: GameState = JSON.parse(gameStateRaw);
+    if (!gameState) return console.error('Game state invalid');
+    const player: Player = {
+      user_ID: user.id,
+      stack: 100,
+      userRoomDbId: roomInfo.UserRooms.find((ur) => ur.userId === user.id)!.id,
+      gameTableDbId: roomInfo.gameTableId,
+    };
+    const updatedGameState = takeSeat(gameState, player, seat.position);
+    // broadcast player joined room
+    io.to(takeSeatData.roomUrl).emit('seatTaken', seat);
+    await context.redis.set(
+      `gameState:${takeSeatData.roomUrl}`,
+      JSON.stringify(updatedGameState)
+    );
+    io.to(takeSeatData.roomUrl).emit('gameState', updatedGameState);
   } catch (err) {
     console.error('Error updating game state:', err);
   }

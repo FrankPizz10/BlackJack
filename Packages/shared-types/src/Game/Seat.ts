@@ -5,5 +5,5 @@ export type Seat = Readonly<{
   hands: ReadonlyArray<Hand>;
   isAfk: boolean;
   isTurn: boolean;
-  player: Player;
+  player: Readonly<Player> | null;
 }>;

@@ -2,9 +2,13 @@ import { Server, Socket } from 'socket.io';
 import { AppContext } from '../context';
 import { Queue } from 'bullmq';
 import { DbUser } from '@shared-types/db/User';
-import { handleCreateRoom, handleJoinRoom } from './handlers/roomHandlers';
+import {
+  handleCreateRoom,
+  handleJoinRoom,
+  handleTakeSeat,
+} from './handlers/roomHandlers';
 import { handleTakeAction, startGame } from './handlers/gameHandlers';
-import { JoinRoom, joinRoomSchema } from '@shared-types/db/Room';
+import { JoinRoom, joinRoomSchema, TakeSeat } from '@shared-types/db/Room';
 import { ActionEvent, eventSchema, Event } from '@shared-types/Game/Action';
 import { CustomSocket } from '.';
 import { getRoomInfoByUrl } from '../services/roomsService';
@@ -66,5 +70,13 @@ export const registerSocketEvents = (
       socket.emit('error', 'User not in room');
     }
     handleTakeAction(io, context, turnQueue, actionData);
+  });
+  socket.on('takeSeat', (takeSeatData: TakeSeat) => {
+    if (!takeSeatData.roomUrl) return;
+    if (!(socket as CustomSocket).roomUrl.has(takeSeatData.roomUrl)) {
+      console.error('User not in room:', takeSeatData.roomUrl);
+      socket.emit('error', 'User not in room');
+    }
+    handleTakeSeat(io, socket, context, user, takeSeatData);
   });
 };

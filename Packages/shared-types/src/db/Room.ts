@@ -12,6 +12,12 @@ export const roomsCreateSchema = z.object({
     .default(15),
 });
 
+export const takeSeatSchema = z.object({
+  roomUrl: z.string().min(1, 'URL is required'),
+  seatPosition: z.number().int(),
+  userRoomId: z.number().int(),
+});
+
 export const roomSchema = roomsCreateSchema.extend({ id: z.number().int() });
 
 export const joinRoomSchema = z.object({
@@ -23,6 +29,7 @@ export const getRoomsSchema = z.array(roomSchema);
 export type CreateRoomData = z.infer<typeof roomsCreateSchema>;
 export type RoomData = z.infer<typeof roomSchema>;
 export type JoinRoom = z.infer<typeof joinRoomSchema>;
+export type TakeSeat = z.infer<typeof takeSeatSchema>;
 
 export type groupedRoomData = {
   roomsDb: CreateRoomData[];
