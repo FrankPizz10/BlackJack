@@ -1,4 +1,4 @@
-import { Card } from './Card';
+import { Card, isBlackjack } from './Card';
 import { createDeck, Deck, draw, shuffle } from './Deck';
 import { Hand, computeHandCount } from './Hand';
 import { Seat } from './Seat';
@@ -84,7 +84,7 @@ export const checkEligibleAction = (gs: GameState): ActionType[] => {
 // Helper method to handle Dealer action
 export const handleDealer = (
   gs: GameState
-): { isDone: boolean; gs: GameState } => {
+): { actionIsDone: boolean; gs: GameState } => {
   // Flip the dealer's face down card
   let updatedDealerHand = gs.dealerHand.map((card) => ({
     ...card,
@@ -96,7 +96,7 @@ export const handleDealer = (
   // Draw cards while the dealer total is less than or equal to 16
   while (dealerTotal <= 16 || (dealerTotal === 17 && hasAce)) {
     const cardResult = drawCard(currentGs.deck, currentGs);
-    if (!cardResult) return { isDone: true, gs: currentGs };
+    if (!cardResult) return { actionIsDone: true, gs: currentGs };
     const card = cardResult.card;
     currentGs = cardResult.gs;
     updatedDealerHand = [...updatedDealerHand, { ...card, faceUp: true }];
@@ -105,7 +105,7 @@ export const handleDealer = (
     currentGs = { ...currentGs, dealerHand: updatedDealerHand };
   }
 
-  return { isDone: true, gs: currentGs };
+  return { actionIsDone: true, gs: currentGs };
 };
 
 // Helper method for "Hit"
@@ -113,11 +113,11 @@ export const handleHit = (
   gs: GameState,
   seat: number,
   currentHand: number
-): { isDone: boolean; gs: GameState } => {
+): { actionIsDone: boolean; gs: GameState } => {
   const { deck, seats } = gs;
   const drawResult = drawCard(deck, gs);
   if (!drawResult) {
-    return { isDone: false, gs };
+    return { actionIsDone: false, gs };
   }
 
   const card = drawResult.card;
@@ -128,19 +128,19 @@ export const handleHit = (
   };
 
   const count = computeHandCount(updatedHand.cards);
-  const isDone = count > 21;
+  const actionIsDone = count > 21;
 
   const updatedSeat: Seat = {
     ...seats[seat],
     hands: [
       ...seats[seat].hands.slice(0, currentHand),
-      { ...updatedHand, isDone },
+      { ...updatedHand, isDone: actionIsDone },
       ...seats[seat].hands.slice(currentHand + 1),
     ],
   };
 
   return {
-    isDone,
+    actionIsDone: actionIsDone,
     gs: {
       ...hitGameState,
       seats: [...seats.slice(0, seat), updatedSeat, ...seats.slice(seat + 1)],
@@ -153,7 +153,7 @@ export const handleStay = (
   gs: GameState,
   seat: number,
   currentHand: number
-): { isDone: boolean; gs: GameState } => {
+): { actionIsDone: boolean; gs: GameState } => {
   // Update the hand to be done
   const updatedHand: Hand = {
     ...gs.seats[seat].hands[currentHand],
@@ -169,7 +169,7 @@ export const handleStay = (
     ],
   };
   return {
-    isDone: true,
+    actionIsDone: true,
     gs: {
       ...gs,
       seats: [
@@ -186,11 +186,11 @@ export const handleDoubleDown = (
   gs: GameState,
   seat: number,
   current_hand: number
-): { isDone: boolean; gs: GameState } => {
+): { actionIsDone: boolean; gs: GameState } => {
   const { deck } = gs;
   const cardResult = drawCard(deck, gs);
   if (!cardResult) {
-    return { isDone: false, gs };
+    return { actionIsDone: false, gs };
   }
   const card = cardResult.card;
   const drawGameState = cardResult.gs;
@@ -214,7 +214,7 @@ export const handleDoubleDown = (
     ],
   };
   return {
-    isDone: true,
+    actionIsDone: true,
     gs: {
       ...drawGameState,
       seats: [
@@ -231,7 +231,7 @@ export const handleSplit = (
   gs: GameState,
   seat: number,
   currentHand: number
-): { isDone: boolean; gs: GameState } => {
+): { actionIsDone: boolean; gs: GameState } => {
   // Split the current hand into two separate hands with the same bet amount and one card each
   const newHands: Hand[] = [
     {
@@ -255,7 +255,7 @@ export const handleSplit = (
   };
 
   return {
-    isDone: true,
+    actionIsDone: true,
     gs: {
       ...gs,
       seats: [
@@ -271,18 +271,18 @@ export const handleSplit = (
 export const handleBet = (
   gs: GameState,
   bet: Bet
-): { isDone: boolean; gs: GameState } => {
-  if (!gs || !bet) return { isDone: false, gs };
+): { actionIsDone: boolean; gs: GameState } => {
+  if (!gs || !bet) return { actionIsDone: false, gs };
 
   const seatPosition = bet.bettingSeat;
   if (!gs.seats[seatPosition].player) {
     console.error('Player not found at position', seatPosition);
-    return { isDone: false, gs };
+    return { actionIsDone: false, gs };
   }
 
   if (bet.betAmount > gs.seats[seatPosition].player.stack) {
     console.log('Not enough stack');
-    return { isDone: false, gs };
+    return { actionIsDone: false, gs };
   }
 
   // Deduct the bet amount from the player's stack
@@ -302,7 +302,7 @@ export const handleBet = (
   };
 
   return {
-    isDone: true,
+    actionIsDone: true,
     gs: {
       ...gs,
       seats: [
@@ -346,7 +346,7 @@ export interface ActionResult {
 export const takeAction = (gs: GameState, action: Action): ActionResult => {
   if (action.actionType === 'Bet' && action.bet) {
     const betResult = handleBet(gs, action.bet);
-    if (!betResult.isDone) return { gs, actionSuccess: false };
+    if (!betResult.actionIsDone) return { gs, actionSuccess: false };
     return { gs: betResult.gs, actionSuccess: true };
   }
 
@@ -368,36 +368,36 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
   const currentHand = gs.seats[seat].hands.findIndex((h) => h.isCurrentHand);
   if (currentHand === -1) return { gs, actionSuccess: false }; // No current hand
   console.log('Current Hand: ', gs.seats[seat].hands[currentHand]);
-  let isDone = false;
+  let actionIsDone = false;
   let gamestateAfterAction: GameState | null = null;
   switch (action.actionType) {
     case 'Hit': {
       const hitResult = handleHit(gs, seat, currentHand);
-      isDone = hitResult.isDone;
+      actionIsDone = hitResult.actionIsDone;
       gamestateAfterAction = hitResult.gs;
       break;
     }
     case 'Stand': {
       const standResult = handleStay(gs, seat, currentHand);
-      isDone = standResult.isDone;
+      actionIsDone = standResult.actionIsDone;
       gamestateAfterAction = standResult.gs;
       break;
     }
     case 'Double Down': {
       const doubleDownResult = handleDoubleDown(gs, seat, currentHand);
-      isDone = doubleDownResult.isDone;
+      actionIsDone = doubleDownResult.actionIsDone;
       gamestateAfterAction = doubleDownResult.gs;
       break;
     }
     case 'Split': {
       const splitResult = handleSplit(gs, seat, currentHand);
-      isDone = splitResult.isDone;
+      actionIsDone = splitResult.actionIsDone;
       gamestateAfterAction = splitResult.gs;
       break;
     }
     case 'Deal': {
       const dealResult = handleHit(gs, seat, currentHand);
-      isDone = dealResult.isDone;
+      actionIsDone = dealResult.actionIsDone;
       gamestateAfterAction = dealResult.gs;
       break;
     }
@@ -406,7 +406,7 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
     //   break;
     case 'Dealer': {
       const dealerResult = handleDealer(gs);
-      isDone = dealerResult.isDone;
+      actionIsDone = dealerResult.actionIsDone;
       gamestateAfterAction = dealerResult.gs;
       break;
     }
@@ -415,11 +415,12 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
     //   break;
   }
   // Return a new updated game state
-  if (!isDone && gamestateAfterAction) {
+  if (!actionIsDone && gamestateAfterAction) {
     return { gs: gamestateAfterAction, actionSuccess: true };
   }
-  if (isDone && gamestateAfterAction) {
-    const updatedSeats = gamestateAfterAction.seats.map((s, index) => {
+  if (actionIsDone && gamestateAfterAction) {
+    const activePlayers = gamestateAfterAction.seats.filter((s) => s.player);
+    const updatedSeats = activePlayers.map((s, index) => {
       if (index === seat) {
         return {
           ...s,
@@ -435,7 +436,7 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
       return s;
     });
 
-    if (seat === gamestateAfterAction.seats.length - 1) {
+    if (seat === activePlayers.length - 1) {
       // Play the dealer hand
       const updatedGsAfterDealer = handleDealer({
         ...gamestateAfterAction,
@@ -570,10 +571,13 @@ const createSeats = (
 
 // Begin to deal cards for the game
 export const dealCards = (gs: GameState): GameState => {
-  // First round: deal one face-up card to each player
   let currentGs = gs;
-  const newSeats: Seat[] = currentGs.seats.map((seat) => {
-    if (!seat.player) return seat;
+
+  // Get all seats with players
+  const activePlayers = gs.seats.filter((seat) => seat.player);
+
+  // First round: deal one face-up card to each player
+  let newSeats: Seat[] = activePlayers.map((seat) => {
     const cardResult = drawCard(currentGs.deck, currentGs);
     if (!cardResult) return seat;
     currentGs = cardResult.gs;
@@ -600,7 +604,7 @@ export const dealCards = (gs: GameState): GameState => {
   ];
 
   // Second round: deal one face-up card to each player
-  const updatedSeats = newSeats.map((seat) => {
+  newSeats = newSeats.map((seat) => {
     const cardResult = drawCard(currentGs.deck, currentGs);
     if (!cardResult) return seat;
     currentGs = cardResult.gs;
@@ -627,9 +631,9 @@ export const dealCards = (gs: GameState): GameState => {
   ];
 
   // Check for Blackjacks in player hands
-  const updatedSeatsWithBlackjack = updatedSeats.map((seat) => {
+  let updatedSeatsWithBlackjack = newSeats.map((seat) => {
     const hand = seat.hands[0];
-    if (computeHandCount(hand.cards) === 21) {
+    if (isBlackjack(hand.cards)) {
       return {
         ...seat,
         hands: seat.hands.map((h, index) =>
@@ -643,11 +647,10 @@ export const dealCards = (gs: GameState): GameState => {
   });
 
   // Check if dealer has a blackjack
-  let updatedSeatsWithPush = updatedSeatsWithBlackjack;
   let roundOver = false;
 
-  if (computeHandCount(finalDealerHand) === 21) {
-    updatedSeatsWithPush = updatedSeatsWithBlackjack.map((seat) => ({
+  if (isBlackjack(finalDealerHand)) {
+    updatedSeatsWithBlackjack = updatedSeatsWithBlackjack.map((seat) => ({
       ...seat,
       hands: seat.hands.map((hand, index) =>
         index === 0
@@ -656,7 +659,7 @@ export const dealCards = (gs: GameState): GameState => {
               isDone: true,
               isWon: false,
               isBlackjack: false,
-              isPush: computeHandCount(hand.cards) === 21,
+              isPush: isBlackjack(hand.cards),
             }
           : hand
       ),
@@ -665,12 +668,16 @@ export const dealCards = (gs: GameState): GameState => {
   }
 
   // Check if the round is over (all players are done)
-  if (updatedSeatsWithPush.every((seat) => seat.hands[0].isDone)) {
+  if (
+    updatedSeatsWithBlackjack.every(
+      (seat) => seat.player && seat.hands[0].isDone
+    )
+  ) {
     roundOver = true;
     return payoutHands({
       ...currentGs,
       dealerHand: finalDealerHand,
-      seats: updatedSeatsWithPush,
+      seats: updatedSeatsWithBlackjack,
       roundOver,
     });
   }
@@ -678,7 +685,7 @@ export const dealCards = (gs: GameState): GameState => {
   return {
     ...currentGs,
     dealerHand: finalDealerHand,
-    seats: updatedSeatsWithPush,
+    seats: updatedSeatsWithBlackjack,
     roundOver,
   };
 };

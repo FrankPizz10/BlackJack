@@ -40,3 +40,9 @@
 .read-the-docs {
   color: #888;
 }
+
+.CardDisplay {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
