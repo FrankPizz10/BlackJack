@@ -1,5 +1,5 @@
 import { ActionType } from './ActionType';
-import { Bet, betSchema } from './Bet';
+import { betSchema } from './Bet';
 import { z } from 'zod';
 
 export const actionSchema = z.object({

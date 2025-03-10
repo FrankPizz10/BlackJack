@@ -14,4 +14,3 @@ export const getUserIdFromToken = async (
   });
   return userId?.id;
 };
-

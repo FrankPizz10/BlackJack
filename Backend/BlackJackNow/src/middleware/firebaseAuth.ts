@@ -1,7 +1,6 @@
 import { ExtendedError, Socket } from 'socket.io';
 import { admin } from '../services/firebaseService';
 import { Request, Response, NextFunction } from 'express';
-import { CustomSocket } from '../sockets/index';
 import { AppContext } from '../context';
 import { getUserIdFromToken } from '../services/userService';
 

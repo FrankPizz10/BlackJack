@@ -20,9 +20,7 @@ import {
   Event,
   actionEventSchema,
 } from '@shared-types/Game/Action';
-import { CustomSocket } from '.';
 import { getRoomInfoByUrl } from '../services/roomsService';
-import { RoomWithUsersAndSeats } from '@shared-types/db/UserRoom';
 
 export const registerSocketEvents = (
   io: Server,

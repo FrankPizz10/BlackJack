@@ -4,7 +4,7 @@ import { registerSocketEvents } from './events';
 import { AppContext } from '../context';
 import { subscribeToRedisChannel } from './redisSub';
 import { Queue } from 'bullmq';
-import { createUserSchema, userSchema } from '@shared-types/db/User';
+import { createUserSchema } from '@shared-types/db/User';
 
 export interface CustomSocket extends Socket {
   roomUrl: Set<string>; // Store the room url inside socket.data

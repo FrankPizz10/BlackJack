@@ -1,6 +1,5 @@
 import { Server, Socket } from 'socket.io';
 import { DbUser } from '@shared-types/db/User';
-import { CustomSocket } from '../index';
 import { AppContext } from '../../context';
 import {
   createRoom,

@@ -431,22 +431,6 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
     return { gs: gamestateAfterAction, actionSuccess: true };
   }
   if (actionIsDone && gamestateAfterAction) {
-    // const activePlayers = gamestateAfterAction.seats.filter((s) => s.player);
-    // const updatedSeats = activePlayers.map((s, index) => {
-    //   if (index === gs.turnIndex) {
-    //     return {
-    //       ...s,
-    //       hands: s.hands.map((h, hIndex) =>
-    //         hIndex === currentHand ? { ...h, isCurrentHand: false } : h
-    //       ),
-    //       isTurn: false,
-    //     };
-    //   }
-    //   if (index === seat + 1) {
-    //     return { ...s, isTurn: true };
-    //   }
-    //   return s;
-    // });
     const updatedSeats = gamestateAfterAction.seats.map((seat, index) => {
       if (index === gs.turnIndex) {
         return {
@@ -541,12 +525,6 @@ const payoutHands = (gs: GameState): GameState => {
       return total;
     }, 0);
 
-    // Create a new player object with the updated stack
-    // const updatedPlayer = {
-    //   ...seat.player,
-    //   stack: seat.player ? seat.player.stack + winnings : 0,
-    // };
-
     const updatedPlayer = seat.player
       ? {
           ...seat.player,
@@ -591,7 +569,7 @@ const createSeats = (
   totalSeats: number = 6 // Define the total number of seats at the table
 ): Seat[] => {
   // Initialize seats with empty placeholders
-  const seats: Seat[] = Array.from({ length: totalSeats }, (_, i) => ({
+  const seats: Seat[] = Array.from({ length: totalSeats }, () => ({
     handIndex: 0,
     hands: [
       {
