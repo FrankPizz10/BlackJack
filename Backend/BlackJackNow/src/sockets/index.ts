@@ -4,7 +4,7 @@ import { registerSocketEvents } from './events';
 import { AppContext } from '../context';
 import { subscribeToRedisChannel } from './redisSub';
 import { Queue } from 'bullmq';
-import { createUserSchema } from '@shared-types/db/User';
+import { createUserSchema, userSchema } from '@shared-types/db/User';
 
 export interface CustomSocket extends Socket {
   roomUrl: Set<string>; // Store the room url inside socket.data
@@ -24,19 +24,19 @@ export const initializeSockets = (
   io.on('connection', async (socket) => {
     console.log('A user connected:', socket.data.userUid);
     // Verify zod schema
-    const createUserData = {
+    const socketData = {
       uid: socket.data.userUid,
     };
-    const result = createUserSchema.safeParse(createUserData);
+    const result = createUserSchema.safeParse(socketData);
     if (!result.success) {
-      console.error('Invalid user ID:', createUserData);
+      console.error('Invalid user ID:', socketData.uid);
       return;
     }
     // Create user
     const user = await context.prisma.users.upsert({
-      where: { uid: createUserData.uid },
+      where: { uid: socketData.uid },
       update: {},
-      create: { uid: createUserData.uid },
+      create: { uid: socketData.uid },
     });
     console.log('User created:', user);
     registerSocketEvents(io, socket, context, turnQueue, user);

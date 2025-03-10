@@ -123,8 +123,7 @@ export const handleDealer = (
 
 // Helper method for "Hit"
 export const handleHit = (
-  gs: GameState,
-  currentHand: number
+  gs: GameState
 ): { actionIsDone: boolean; gs: GameState } => {
   const { deck, seats } = gs;
   const drawResult = drawCard(deck, gs);
@@ -132,6 +131,7 @@ export const handleHit = (
     return { actionIsDone: false, gs };
   }
 
+  const currentHand = gs.seats[gs.turnIndex].handIndex;
   const card = drawResult.card;
   const hitGameState = drawResult.gs;
   const updatedHand: Hand = {
@@ -169,9 +169,9 @@ export const handleHit = (
 
 // Helper method for "Stay"
 export const handleStay = (
-  gs: GameState,
-  currentHand: number
+  gs: GameState
 ): { actionIsDone: boolean; gs: GameState } => {
+  const currentHand = gs.seats[gs.turnIndex].handIndex;
   // Update the hand to be done
   const updatedHand: Hand = {
     ...gs.seats[gs.turnIndex].hands[currentHand],
@@ -201,9 +201,9 @@ export const handleStay = (
 
 // Helper method for "Double Down"
 export const handleDoubleDown = (
-  gs: GameState,
-  current_hand: number
+  gs: GameState
 ): { actionIsDone: boolean; gs: GameState } => {
+  const currentHand = gs.seats[gs.turnIndex].handIndex;
   const { deck } = gs;
   const cardResult = drawCard(deck, gs);
   if (!cardResult) {
@@ -213,21 +213,21 @@ export const handleDoubleDown = (
   const drawGameState = cardResult.gs;
 
   const updatedHand: Hand = {
-    ...drawGameState.seats[gs.turnIndex].hands[current_hand],
+    ...drawGameState.seats[gs.turnIndex].hands[currentHand],
     cards: [
-      ...drawGameState.seats[gs.turnIndex].hands[current_hand].cards,
+      ...drawGameState.seats[gs.turnIndex].hands[currentHand].cards,
       { ...card, faceUp: true },
     ],
     isDone: true,
-    bet: drawGameState.seats[gs.turnIndex].hands[current_hand].bet * 2,
+    bet: drawGameState.seats[gs.turnIndex].hands[currentHand].bet * 2,
   };
 
   const updatedSeat: Seat = {
     ...drawGameState.seats[gs.turnIndex],
     hands: [
-      ...drawGameState.seats[gs.turnIndex].hands.slice(0, current_hand),
+      ...drawGameState.seats[gs.turnIndex].hands.slice(0, currentHand),
       updatedHand,
-      ...drawGameState.seats[gs.turnIndex].hands.slice(current_hand + 1),
+      ...drawGameState.seats[gs.turnIndex].hands.slice(currentHand + 1),
     ],
   };
   return {
@@ -245,9 +245,9 @@ export const handleDoubleDown = (
 
 // Helper method for "Split"
 export const handleSplit = (
-  gs: GameState,
-  currentHand: number
+  gs: GameState
 ): { actionIsDone: boolean; gs: GameState } => {
+  const currentHand = gs.seats[gs.turnIndex].handIndex;
   // Split the current hand into two separate hands with the same bet amount and one card each
   const newHands: Hand[] = [
     {
@@ -370,7 +370,8 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
     return { gs: resetResult, actionSuccess: true };
   }
 
-  if (gs.turnIndex === -1) return { gs, actionSuccess: false }; // No active seat
+  if (gs.turnIndex < 0 || gs.turnIndex >= gs.seats.length)
+    return { gs, actionSuccess: false }; // No active seat
 
   const elligbleActions = checkEligibleAction(gs);
   console.log('Eligible Action Types: ', elligbleActions);
@@ -378,38 +379,36 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
     return { gs, actionSuccess: false };
   }
   console.log('Eligible Action: ', action);
-  const currentHand = gs.seats[gs.turnIndex].handIndex;
-  if (currentHand === -1) return { gs, actionSuccess: false }; // No current hand
-  console.log('Current Hand: ', gs.seats[gs.turnIndex].hands[currentHand]);
+  // const currentHand = gs.seats[gs.turnIndex].handIndex;
   let actionIsDone = false;
   let gamestateAfterAction: GameState | null = null;
   switch (action.actionType) {
     case 'Hit': {
-      const hitResult = handleHit(gs, currentHand);
+      const hitResult = handleHit(gs);
       actionIsDone = hitResult.actionIsDone;
       gamestateAfterAction = hitResult.gs;
       break;
     }
     case 'Stand': {
-      const standResult = handleStay(gs, currentHand);
+      const standResult = handleStay(gs);
       actionIsDone = standResult.actionIsDone;
       gamestateAfterAction = standResult.gs;
       break;
     }
     case 'Double Down': {
-      const doubleDownResult = handleDoubleDown(gs, currentHand);
+      const doubleDownResult = handleDoubleDown(gs);
       actionIsDone = doubleDownResult.actionIsDone;
       gamestateAfterAction = doubleDownResult.gs;
       break;
     }
     case 'Split': {
-      const splitResult = handleSplit(gs, currentHand);
+      const splitResult = handleSplit(gs);
       actionIsDone = splitResult.actionIsDone;
       gamestateAfterAction = splitResult.gs;
       break;
     }
     case 'Deal': {
-      const dealResult = handleHit(gs, currentHand);
+      const dealResult = handleHit(gs);
       actionIsDone = dealResult.actionIsDone;
       gamestateAfterAction = dealResult.gs;
       break;

@@ -229,6 +229,8 @@ const TestGame = () => {
           betAmount: gameState.betAmount,
           bettingSeat: positionHelper(roomState.userSeat),
         },
+        seatIndex: positionHelper(roomState.userSeat),
+        handIndex: 0,
       };
       console.log('Action Bet: ', action);
     } else if (actionType === 'Hit') {
@@ -237,6 +239,8 @@ const TestGame = () => {
         roomUrl: roomState.room.url,
         actionType: actionType,
         bet: null,
+        seatIndex: positionHelper(roomState.userSeat),
+        handIndex: 0,
       };
     } else if (actionType === 'Stand') {
       console.log('Action Stand: ', actionType);
@@ -244,6 +248,8 @@ const TestGame = () => {
         roomUrl: roomState.room.url,
         actionType: actionType,
         bet: null,
+        seatIndex: positionHelper(roomState.userSeat),
+        handIndex: 0,
       };
     } else if (actionType === 'Reset') {
       console.log('Action Reset: ', actionType);
@@ -251,6 +257,8 @@ const TestGame = () => {
         roomUrl: roomState.room.url,
         actionType: actionType,
         bet: null,
+        seatIndex: positionHelper(roomState.userSeat),
+        handIndex: 0,
       };
       // setStartBetting(true);
       // setCardsDealt(false);

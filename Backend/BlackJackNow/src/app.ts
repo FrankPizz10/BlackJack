@@ -7,7 +7,10 @@ import rootRouter from './routes/root';
 import dotenv from 'dotenv';
 import { createContext } from './context';
 import { createServer } from 'http';
-import { firebaseAuthApi, firebaseAuthSocket } from './middleware/firebaseAuth';
+import {
+  createFirebaseAuthApi,
+  createFirebaseAuthSocket,
+} from './middleware/firebaseAuth';
 import { Queue } from 'bullmq';
 import { initializeSockets } from './sockets';
 import socketRouter from './routes/socket';
@@ -44,8 +47,8 @@ httpServer.listen(PORT, () => {
 
 if (process.env.DISABLE_MIDDLEWARE !== 'true') {
   // Use firebase middleware if not disabled
-  app.use('/api', firebaseAuthApi);
-  io.use(firebaseAuthSocket);
+  app.use('/api', createFirebaseAuthApi(context));
+  io.use(createFirebaseAuthSocket(context));
 }
 
 export default app;

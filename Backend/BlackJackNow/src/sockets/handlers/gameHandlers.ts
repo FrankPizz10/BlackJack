@@ -1,4 +1,4 @@
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { AppContext } from '../../context';
 import { Queue } from 'bullmq';
 import { startTurn } from '../../services/gameStateService';
@@ -12,6 +12,7 @@ import {
 } from '@shared-types/Game/GameState';
 import { ActionEvent, Action } from '@shared-types/Game/Action';
 import { RoomWithUsersAndSeats } from '@shared-types/db/UserRoom';
+import { isAuthorizedGameAction } from '../../middleware/gameAuthorization';
 
 export const startGame = async (
   io: Server,
@@ -46,14 +47,12 @@ export const startGame = async (
 
 export const handleTakeAction = async (
   io: Server,
+  socket: Socket,
   context: AppContext,
   turnQueue: Queue,
   actionEvent: ActionEvent
 ) => {
   console.log('Action received:', actionEvent);
-
-  if (!actionEvent.roomUrl) return; // Early return if roomId is missing
-
   try {
     // Get and parse game state
     const gameStateRaw = await context.redis.get(
@@ -67,7 +66,14 @@ export const handleTakeAction = async (
     const action: Action = {
       actionType: actionEvent.actionType,
       bet: actionEvent.bet,
+      seatIndex: actionEvent.seatIndex,
+      handIndex: actionEvent.handIndex,
     };
+    if (!isAuthorizedGameAction(socket.data.userId, actionEvent, gameState)) {
+      console.error('Unauthorized action');
+      io.to(actionEvent.roomUrl).emit('error', 'Unauthorized action');
+      return;
+    }
     const { gs: newGameState, actionSuccess } = takeAction(gameState, action);
     if (!actionSuccess) {
       console.error('Action failed');

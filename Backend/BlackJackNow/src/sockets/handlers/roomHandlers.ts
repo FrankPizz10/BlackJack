@@ -126,11 +126,23 @@ export const handleTakeSeat = async (
   // Check if seat is available
   const roomInfo = await getRoomInfoByUrl(context, takeSeatData.roomUrl);
   if (!roomInfo) return;
+  // Check if table is full
   if (roomInfo.UserRooms.length >= 7) {
     console.log('Table is full');
     socket.emit('error', 'Table is full');
     return;
   }
+  // Check if seat is already taken
+  if (
+    roomInfo.UserRooms.some((ur) =>
+      ur.UserSeats.some((us) => us.position === takeSeatData.seatPosition)
+    )
+  ) {
+    console.log('Seat is already taken');
+    socket.emit('error', 'Seat is already taken');
+    return;
+  }
+  // take seat
   const seat = await createSeat(
     context,
     takeSeatData.roomUrl,

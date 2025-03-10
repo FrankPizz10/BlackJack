@@ -8,8 +8,18 @@ import {
   handleTakeSeat,
 } from './handlers/roomHandlers';
 import { handleTakeAction, startGame } from './handlers/gameHandlers';
-import { JoinRoom, joinRoomSchema, TakeSeat } from '@shared-types/db/Room';
-import { ActionEvent, eventSchema, Event } from '@shared-types/Game/Action';
+import {
+  JoinRoom,
+  joinRoomSchema,
+  TakeSeat,
+  takeSeatSchema,
+} from '@shared-types/db/Room';
+import {
+  ActionEvent,
+  eventSchema,
+  Event,
+  actionEventSchema,
+} from '@shared-types/Game/Action';
 import { CustomSocket } from '.';
 import { getRoomInfoByUrl } from '../services/roomsService';
 import { RoomWithUsersAndSeats } from '@shared-types/db/UserRoom';
@@ -65,19 +75,28 @@ export const registerSocketEvents = (
     handleJoinRoom(io, socket, context, user, joinRoomData);
   });
   socket.on('takeAction', (actionData: ActionEvent) => {
-    if (!actionData.roomUrl) return;
+    const result = actionEventSchema.safeParse(actionData);
+    if (!result.success) {
+      io.to(actionData.roomUrl).emit('error', result.error.message);
+      return;
+    }
     // TODO authorize action with redis
     // if (!(socket as CustomSocket).roomUrl.has(actionData.roomUrl)) {
     //   console.error('User not in room:', actionData.roomUrl);
     //   socket.emit('error', 'User not in room');
     // }
-    handleTakeAction(io, context, turnQueue, actionData);
+    handleTakeAction(io, socket, context, turnQueue, actionData);
   });
   socket.on('takeSeat', (takeSeatData: TakeSeat) => {
-    if (!takeSeatData.roomUrl) return;
-    if (!(socket as CustomSocket).roomUrl.has(takeSeatData.roomUrl)) {
-      console.error('User not in room:', takeSeatData.roomUrl);
-      socket.emit('error', 'User not in room');
+    // if (!takeSeatData.roomUrl) return;
+    // if (!(socket as CustomSocket).roomUrl.has(takeSeatData.roomUrl)) {
+    //   console.error('User not in room:', takeSeatData.roomUrl);
+    //   socket.emit('error', 'User not in room');
+    // }
+    const result = takeSeatSchema.safeParse(takeSeatData);
+    if (!result.success) {
+      io.to(takeSeatData.roomUrl).emit('error', result.error.message);
+      return;
     }
     handleTakeSeat(io, socket, context, user, takeSeatData);
   });
