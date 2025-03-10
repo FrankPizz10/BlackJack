@@ -43,8 +43,8 @@ export const initializeSockets = (
 
     socket.on('disconnect', async () => {
       console.log('User disconnected:', socket.id);
-      const roomUrl = (socket as CustomSocket).roomUrl; // Retrieve stored room url
-      if (!roomUrl) return;
+      // const roomUrl = (socket as CustomSocket).roomUrl; // Retrieve stored room url
+      // if (!roomUrl) return;
       // TODO: Remove user from all rooms they were in
     });
   });

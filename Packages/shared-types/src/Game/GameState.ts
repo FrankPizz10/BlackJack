@@ -8,12 +8,25 @@ import { Bet } from './Bet';
 import { Player } from './Player';
 import { RoomWithUsersAndSeats, UserRoomWithSeat } from '../db/UserRoom';
 
-// GameState.ts will be stored in Redis Cache
-// Redis Key for the Gamestate will look like Game:{roomId}
+/**
+ * Represents the state of the game
+ * @type {GameState}
+ * @property {number} rommDbId - ID of the room in the database
+ * @property {number} gameTableDbId - ID of the game table in the database
+ * @property {ReadonlyArray<Card>} dealerHand - Array of cards in the dealer's hand
+ * @property {number} turnIndex - Index of the current turn
+ * @property {ReadonlyArray<Seat>} seats - Array of seats in the game
+ * @property {boolean} roundOver - Whether the round is over
+ * @property {number} timeToAct - Time left for the current player to act
+ * @property {number} timeToBet - Time left for the current player to bet
+ * @property {Deck} deck - The deck of cards used in the game
+ * @property {boolean} shuffle - Whether the deck needs to be shuffled
+ */
 export type GameState = Readonly<{
   rommDbId: number;
   gameTableDbId: number;
   dealerHand: ReadonlyArray<Card>;
+  turnIndex: number; // Index of the current turn
   seats: ReadonlyArray<Seat>; // Always 7 seats
   roundOver: boolean;
   timeToAct: number;
@@ -41,8 +54,8 @@ const drawCard = (
 
 // Helper method to check eligible actions for a Seat
 export const checkEligibleAction = (gs: GameState): ActionType[] => {
-  const seat = gs.seats[gs.seats.findIndex((s) => s.isTurn)];
-  const hand = seat.hands.find((h) => h.isCurrentHand);
+  const seat = gs.seats[gs.turnIndex];
+  const hand = seat.hands[seat.handIndex];
   if (!hand) return [];
 
   const total = computeHandCount(hand.cards);
@@ -111,7 +124,6 @@ export const handleDealer = (
 // Helper method for "Hit"
 export const handleHit = (
   gs: GameState,
-  seat: number,
   currentHand: number
 ): { actionIsDone: boolean; gs: GameState } => {
   const { deck, seats } = gs;
@@ -123,19 +135,22 @@ export const handleHit = (
   const card = drawResult.card;
   const hitGameState = drawResult.gs;
   const updatedHand: Hand = {
-    ...seats[seat].hands[currentHand],
-    cards: [...seats[seat].hands[currentHand].cards, { ...card, faceUp: true }],
+    ...seats[gs.turnIndex].hands[currentHand],
+    cards: [
+      ...seats[gs.turnIndex].hands[currentHand].cards,
+      { ...card, faceUp: true },
+    ],
   };
 
   const count = computeHandCount(updatedHand.cards);
-  const actionIsDone = count > 21;
+  const actionIsDone = count >= 21;
 
   const updatedSeat: Seat = {
-    ...seats[seat],
+    ...seats[gs.turnIndex],
     hands: [
-      ...seats[seat].hands.slice(0, currentHand),
+      ...seats[gs.turnIndex].hands.slice(0, currentHand),
       { ...updatedHand, isDone: actionIsDone },
-      ...seats[seat].hands.slice(currentHand + 1),
+      ...seats[gs.turnIndex].hands.slice(currentHand + 1),
     ],
   };
 
@@ -143,7 +158,11 @@ export const handleHit = (
     actionIsDone: actionIsDone,
     gs: {
       ...hitGameState,
-      seats: [...seats.slice(0, seat), updatedSeat, ...seats.slice(seat + 1)],
+      seats: [
+        ...seats.slice(0, gs.turnIndex),
+        updatedSeat,
+        ...seats.slice(gs.turnIndex + 1),
+      ],
     },
   };
 };
@@ -151,21 +170,20 @@ export const handleHit = (
 // Helper method for "Stay"
 export const handleStay = (
   gs: GameState,
-  seat: number,
   currentHand: number
 ): { actionIsDone: boolean; gs: GameState } => {
   // Update the hand to be done
   const updatedHand: Hand = {
-    ...gs.seats[seat].hands[currentHand],
+    ...gs.seats[gs.turnIndex].hands[currentHand],
     isDone: true,
   };
   // Update the seat with the updated hand
   const updatedSeat: Seat = {
-    ...gs.seats[seat],
+    ...gs.seats[gs.turnIndex],
     hands: [
-      ...gs.seats[seat].hands.slice(0, currentHand),
+      ...gs.seats[gs.turnIndex].hands.slice(0, currentHand),
       updatedHand,
-      ...gs.seats[seat].hands.slice(currentHand + 1),
+      ...gs.seats[gs.turnIndex].hands.slice(currentHand + 1),
     ],
   };
   return {
@@ -173,9 +191,9 @@ export const handleStay = (
     gs: {
       ...gs,
       seats: [
-        ...gs.seats.slice(0, seat),
+        ...gs.seats.slice(0, gs.turnIndex),
         updatedSeat,
-        ...gs.seats.slice(seat + 1),
+        ...gs.seats.slice(gs.turnIndex + 1),
       ],
     },
   };
@@ -184,7 +202,6 @@ export const handleStay = (
 // Helper method for "Double Down"
 export const handleDoubleDown = (
   gs: GameState,
-  seat: number,
   current_hand: number
 ): { actionIsDone: boolean; gs: GameState } => {
   const { deck } = gs;
@@ -196,21 +213,21 @@ export const handleDoubleDown = (
   const drawGameState = cardResult.gs;
 
   const updatedHand: Hand = {
-    ...drawGameState.seats[seat].hands[current_hand],
+    ...drawGameState.seats[gs.turnIndex].hands[current_hand],
     cards: [
-      ...drawGameState.seats[seat].hands[current_hand].cards,
+      ...drawGameState.seats[gs.turnIndex].hands[current_hand].cards,
       { ...card, faceUp: true },
     ],
     isDone: true,
-    bet: drawGameState.seats[seat].hands[current_hand].bet * 2,
+    bet: drawGameState.seats[gs.turnIndex].hands[current_hand].bet * 2,
   };
 
   const updatedSeat: Seat = {
-    ...drawGameState.seats[seat],
+    ...drawGameState.seats[gs.turnIndex],
     hands: [
-      ...drawGameState.seats[seat].hands.slice(0, current_hand),
+      ...drawGameState.seats[gs.turnIndex].hands.slice(0, current_hand),
       updatedHand,
-      ...drawGameState.seats[seat].hands.slice(current_hand + 1),
+      ...drawGameState.seats[gs.turnIndex].hands.slice(current_hand + 1),
     ],
   };
   return {
@@ -218,9 +235,9 @@ export const handleDoubleDown = (
     gs: {
       ...drawGameState,
       seats: [
-        ...drawGameState.seats.slice(0, seat),
+        ...drawGameState.seats.slice(0, gs.turnIndex),
         updatedSeat,
-        ...drawGameState.seats.slice(seat + 1),
+        ...drawGameState.seats.slice(gs.turnIndex + 1),
       ],
     },
   };
@@ -229,28 +246,25 @@ export const handleDoubleDown = (
 // Helper method for "Split"
 export const handleSplit = (
   gs: GameState,
-  seat: number,
   currentHand: number
 ): { actionIsDone: boolean; gs: GameState } => {
   // Split the current hand into two separate hands with the same bet amount and one card each
   const newHands: Hand[] = [
     {
-      cards: [gs.seats[seat].hands[currentHand].cards[0]],
-      bet: gs.seats[seat].hands[currentHand].bet,
-      isCurrentHand: true,
+      cards: [gs.seats[gs.turnIndex].hands[currentHand].cards[0]],
+      bet: gs.seats[gs.turnIndex].hands[currentHand].bet,
       isDone: false,
     },
     {
-      cards: [gs.seats[seat].hands[currentHand].cards[1]],
-      bet: gs.seats[seat].hands[currentHand].bet,
-      isCurrentHand: false,
+      cards: [gs.seats[gs.turnIndex].hands[currentHand].cards[1]],
+      bet: gs.seats[gs.turnIndex].hands[currentHand].bet,
       isDone: false,
     },
   ];
 
   // Update the seat with the new state
   const updatedSeat: Seat = {
-    ...gs.seats[seat],
+    ...gs.seats[gs.turnIndex],
     hands: newHands,
   };
 
@@ -259,9 +273,9 @@ export const handleSplit = (
     gs: {
       ...gs,
       seats: [
-        ...gs.seats.slice(0, seat),
+        ...gs.seats.slice(0, gs.turnIndex),
         updatedSeat,
-        ...gs.seats.slice(seat + 1),
+        ...gs.seats.slice(gs.turnIndex + 1),
       ],
     },
   };
@@ -317,20 +331,20 @@ export const handleBet = (
 const handleReset = (gs: GameState): GameState => {
   const updatedGameState: GameState = {
     ...gs,
-    seats: gs.seats.map((seat, seatIndex) => ({
+    seats: gs.seats.map((seat) => ({
       ...seat,
+      handIndex: 0,
       hands: seat.hands.map((hand) => ({
         ...hand,
         isDone: false,
         cards: [],
-        isCurrentHand: true,
         isBlackjack: false,
         isPush: false,
         isWon: false,
         bet: 0,
       })),
-      isTurn: seatIndex === 0,
     })),
+    turnIndex: 0,
     roundOver: false,
     dealerHand: [],
   };
@@ -356,8 +370,7 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
     return { gs: resetResult, actionSuccess: true };
   }
 
-  const seat = gs.seats.findIndex((s) => s.isTurn);
-  if (seat === -1) return { gs, actionSuccess: false }; // No active seat
+  if (gs.turnIndex === -1) return { gs, actionSuccess: false }; // No active seat
 
   const elligbleActions = checkEligibleAction(gs);
   console.log('Eligible Action Types: ', elligbleActions);
@@ -365,38 +378,38 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
     return { gs, actionSuccess: false };
   }
   console.log('Eligible Action: ', action);
-  const currentHand = gs.seats[seat].hands.findIndex((h) => h.isCurrentHand);
+  const currentHand = gs.seats[gs.turnIndex].handIndex;
   if (currentHand === -1) return { gs, actionSuccess: false }; // No current hand
-  console.log('Current Hand: ', gs.seats[seat].hands[currentHand]);
+  console.log('Current Hand: ', gs.seats[gs.turnIndex].hands[currentHand]);
   let actionIsDone = false;
   let gamestateAfterAction: GameState | null = null;
   switch (action.actionType) {
     case 'Hit': {
-      const hitResult = handleHit(gs, seat, currentHand);
+      const hitResult = handleHit(gs, currentHand);
       actionIsDone = hitResult.actionIsDone;
       gamestateAfterAction = hitResult.gs;
       break;
     }
     case 'Stand': {
-      const standResult = handleStay(gs, seat, currentHand);
+      const standResult = handleStay(gs, currentHand);
       actionIsDone = standResult.actionIsDone;
       gamestateAfterAction = standResult.gs;
       break;
     }
     case 'Double Down': {
-      const doubleDownResult = handleDoubleDown(gs, seat, currentHand);
+      const doubleDownResult = handleDoubleDown(gs, currentHand);
       actionIsDone = doubleDownResult.actionIsDone;
       gamestateAfterAction = doubleDownResult.gs;
       break;
     }
     case 'Split': {
-      const splitResult = handleSplit(gs, seat, currentHand);
+      const splitResult = handleSplit(gs, currentHand);
       actionIsDone = splitResult.actionIsDone;
       gamestateAfterAction = splitResult.gs;
       break;
     }
     case 'Deal': {
-      const dealResult = handleHit(gs, seat, currentHand);
+      const dealResult = handleHit(gs, currentHand);
       actionIsDone = dealResult.actionIsDone;
       gamestateAfterAction = dealResult.gs;
       break;
@@ -419,28 +432,43 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
     return { gs: gamestateAfterAction, actionSuccess: true };
   }
   if (actionIsDone && gamestateAfterAction) {
-    const activePlayers = gamestateAfterAction.seats.filter((s) => s.player);
-    const updatedSeats = activePlayers.map((s, index) => {
-      if (index === seat) {
+    // const activePlayers = gamestateAfterAction.seats.filter((s) => s.player);
+    // const updatedSeats = activePlayers.map((s, index) => {
+    //   if (index === gs.turnIndex) {
+    //     return {
+    //       ...s,
+    //       hands: s.hands.map((h, hIndex) =>
+    //         hIndex === currentHand ? { ...h, isCurrentHand: false } : h
+    //       ),
+    //       isTurn: false,
+    //     };
+    //   }
+    //   if (index === seat + 1) {
+    //     return { ...s, isTurn: true };
+    //   }
+    //   return s;
+    // });
+    const updatedSeats = gamestateAfterAction.seats.map((seat, index) => {
+      if (index === gs.turnIndex) {
         return {
-          ...s,
-          hands: s.hands.map((h, hIndex) =>
-            hIndex === currentHand ? { ...h, isCurrentHand: false } : h
-          ),
-          isTurn: false,
+          ...seat,
+          handIndex: gamestateAfterAction.seats[index].handIndex + 1,
         };
       }
-      if (index === seat + 1) {
-        return { ...s, isTurn: true };
-      }
-      return s;
+      return seat;
     });
 
-    if (seat === activePlayers.length - 1) {
+    if (areAllSeatsDone(gamestateAfterAction)) {
       // Play the dealer hand
       const updatedGsAfterDealer = handleDealer({
         ...gamestateAfterAction,
-        seats: updatedSeats,
+        seats: gamestateAfterAction.seats.map((originalSeat) => {
+          const updatedSeat = updatedSeats.find(
+            (updatedSeat) =>
+              originalSeat.player?.user_ID === updatedSeat.player?.user_ID
+          );
+          return updatedSeat ? updatedSeat : originalSeat;
+        }),
       });
       const updatedGsAfterCheck = checkHandsWon(updatedGsAfterDealer.gs);
       const updatedGsAfterPayout = payoutHands(updatedGsAfterCheck);
@@ -463,6 +491,12 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
     gs,
     actionSuccess: false,
   };
+};
+
+const areAllSeatsDone = (gs: GameState): boolean => {
+  return gs.seats.every(
+    (seat) => seat.player === null || seat.hands.every((hand) => hand.isDone)
+  );
 };
 
 const payoutHands = (gs: GameState): GameState => {
@@ -520,6 +554,7 @@ export const createNewGameState = (
     rommDbId: roomInfo.id,
     gameTableDbId: roomInfo.gameTableId,
     dealerHand: [],
+    turnIndex: 0,
     seats: [...createSeats(roomInfo.UserRooms, roomInfo.gameTableId)],
     roundOver: false,
     timeToAct: 20,
@@ -536,6 +571,7 @@ const createSeats = (
 ): Seat[] => {
   // Initialize seats with empty placeholders
   const seats: Seat[] = Array.from({ length: totalSeats }, (_, i) => ({
+    handIndex: 0,
     hands: [
       {
         cards: [],
@@ -555,7 +591,6 @@ const createSeats = (
       const seatIndex = seat.position - 1; // Convert position to array index
       seats[seatIndex] = {
         ...seats[seatIndex], // Retain existing structure
-        isTurn: seat.position === 1, // First player has the turn
         player: {
           user_ID: userRoom.userId,
           stack: userRoom.initialStack,
@@ -685,7 +720,13 @@ export const dealCards = (gs: GameState): GameState => {
   return {
     ...currentGs,
     dealerHand: finalDealerHand,
-    seats: updatedSeatsWithBlackjack,
+    seats: gs.seats.map((originalSeat) => {
+      const updatedSeat = updatedSeatsWithBlackjack.find(
+        (updatedSeat) =>
+          originalSeat.player?.user_ID === updatedSeat.player?.user_ID
+      );
+      return updatedSeat ? updatedSeat : originalSeat;
+    }),
     roundOver,
   };
 };
@@ -701,15 +742,14 @@ export const takeSeat = (
     seats: [
       ...gs.seats.slice(0, seatPosition),
       {
+        handIndex: 0,
         hands: [
           {
             cards: [],
             bet: 0,
-            isCurrentHand: true,
             isDone: false,
           },
         ],
-        isTurn: false,
         isAfk: false,
         player,
       },

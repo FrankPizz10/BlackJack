@@ -55,10 +55,10 @@ export const firebaseAuthSocket = (
     .verifyIdToken(token)
     .then((decodedToken) => {
       socket.data.userUid = decodedToken.uid; // Store user data in socket instance
-      // Ensure roomUrl is initialized before using .add()
-      if (!(socket as CustomSocket).roomUrl) {
-        (socket as CustomSocket).roomUrl = new Set();
-      }
+      // // Ensure roomUrl is initialized before using .add()
+      // if (!(socket as CustomSocket).roomUrl) {
+      //   (socket as CustomSocket).roomUrl = new Set();
+      // }
       next(); // Proceed to the next middleware
     })
     .catch((error) => {

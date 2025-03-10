@@ -31,11 +31,12 @@ export const registerSocketEvents = (
       socket.emit('error', 'Invalid game data');
       return;
     }
-    if (!(socket as CustomSocket).roomUrl.has(startGameEvent.roomUrl)) {
-      console.error('User not in room:', startGameEvent.roomUrl);
-      socket.emit('error', 'User not in room');
-      return;
-    }
+    // TODO check if user is in room from redis
+    // if (!(socket as CustomSocket).roomUrl.has(startGameEvent.roomUrl)) {
+    //   console.error('User not in room:', startGameEvent.roomUrl);
+    //   socket.emit('error', 'User not in room');
+    //   return;
+    // }
     const roomWithUsersAndSeats = await getRoomInfoByUrl(
       context,
       startGameEvent.roomUrl
@@ -65,10 +66,11 @@ export const registerSocketEvents = (
   });
   socket.on('takeAction', (actionData: ActionEvent) => {
     if (!actionData.roomUrl) return;
-    if (!(socket as CustomSocket).roomUrl.has(actionData.roomUrl)) {
-      console.error('User not in room:', actionData.roomUrl);
-      socket.emit('error', 'User not in room');
-    }
+    // TODO authorize action with redis
+    // if (!(socket as CustomSocket).roomUrl.has(actionData.roomUrl)) {
+    //   console.error('User not in room:', actionData.roomUrl);
+    //   socket.emit('error', 'User not in room');
+    // }
     handleTakeAction(io, context, turnQueue, actionData);
   });
   socket.on('takeSeat', (takeSeatData: TakeSeat) => {

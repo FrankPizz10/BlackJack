@@ -56,8 +56,9 @@ export const handleCreateRoom = async (
       userSeatDb: userSeat,
     };
     io.to(socket.id).emit('roomCreated', startGame);
-    // Store the room url inside socket.data
-    (socket as CustomSocket).roomUrl.add(roomDb.url);
+    // TODO store room url in redis
+    // // Store the room url inside socket.data
+    // (socket as CustomSocket).roomUrl.add(roomDb.url);
   } catch (err) {
     console.error('Error creating room:', err);
   }
@@ -102,8 +103,9 @@ export const handleJoinRoom = async (
   );
   // join room
   socket.join(joinRoomData.roomUrl);
+  // TODO store room url in redis
   // Store the room ID inside socket.data
-  (socket as CustomSocket).roomUrl.add(joinRoomData.roomUrl);
+  // (socket as CustomSocket).roomUrl.add(joinRoomData.roomUrl);
   // update redis game state
   try {
     // broadcast player joined room

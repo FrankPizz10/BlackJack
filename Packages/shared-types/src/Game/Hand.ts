@@ -1,9 +1,18 @@
 import { Card } from './Card';
 
+/**
+ * Represents a player's hand
+ * @type {Hand}
+ * @property {ReadonlyArray<Card>} cards - Array of cards in the hand
+ * @property {number} bet - Amount bet on the hand
+ * @property {boolean} isDone - Whether the hand is done
+ * @property {boolean} isWon - Whether the hand is won
+ * @property {boolean} isPush - Whether the hand is a push
+ * @property {boolean} isBlackjack - Whether the hand is a blackjack
+ */
 export type Hand = Readonly<{
   cards: ReadonlyArray<Card>;
   bet: number;
-  isCurrentHand: boolean;
   isDone: boolean;
   isWon?: boolean;
   isPush?: boolean;
