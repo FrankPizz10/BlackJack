@@ -486,11 +486,22 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
     }
     // Next player's turn
     else {
+      // iterate through the gamestateAfterAction.seats to find the next player whose hand is not done
+      const nextPlayerIndex = gamestateAfterAction.seats
+        .slice(gamestateAfterAction.turnIndex + 1)
+        .findIndex((seat) => !seat.hands.every((hand) => hand.isDone));
+      if (nextPlayerIndex === -1) {
+        console.error('No next player found and game is not over');
+        return { gs, actionSuccess: false };
+      }
+      // This returns the sliced index i need the original index
+      const nextPlayerIndexWithOffset =
+        nextPlayerIndex + gamestateAfterAction.turnIndex + 1;
       return {
         gs: {
           ...gamestateAfterAction,
           seats: updatedSeats,
-          turnIndex: gs.turnIndex + 1,
+          turnIndex: nextPlayerIndexWithOffset,
         },
         actionSuccess: true,
       };
@@ -586,7 +597,6 @@ const createSeats = (
       {
         cards: [],
         bet: 0,
-        isCurrentHand: true,
         isDone: false,
       },
     ],

@@ -8,11 +8,9 @@ import { ActionEvent, Event } from '@shared-types/Game/Action';
 import { UserSeat } from '@shared-types/db/UserSeat';
 import { ActionType } from '@shared-types/Game/ActionType';
 import { GameState } from '@shared-types/Game/GameState';
-// import { Card } from '@shared-types/Game/Card';
 import { computeHandCount } from '@shared-types/Game/Hand';
 
 const positionHelper = (seat: UserSeat | null) => {
-  // console.log('User Seat Debug: ', seat);
   return seat && seat.position ? seat.position - 1 : 0;
 };
 
@@ -35,17 +33,6 @@ const isCardsDealt = (gameState: GameState | null) => {
 
 const TestGame = () => {
   const { socket } = useSocket();
-  // const [roomData, setRoomData] = useState<RoomData | null>(null);
-  // const [userRoomData, setUserRoomData] = useState<UserRoom | null>(null);
-  // const [userSeatData, setUserSeatData] = useState<UserSeat | null>(null);
-  // const [joinRoomData, setJoinRoomData] = useState<JoinRoom | null>(null);
-  // const [betAmount, setBetAmount] = useState(0);
-  // const [startBetting, setStartBetting] = useState(false);
-  // const [cardsDealt, setCardsDealt] = useState(false);
-  // const [userCards, setUserCards] = useState<Card[]>([]);
-  // const [dealerCards, setDealerCards] = useState<ReadonlyArray<Card>>([]);
-  // const [gameState, setGameState] = useState<GameState | null>(null);
-  // const [seatTaken, setSeatTaken] = useState(false);
   const [roomState, setRoomState] = useState<{
     room: RoomData | null;
     userRoom: UserRoom | null;
@@ -71,10 +58,6 @@ const TestGame = () => {
   useEffect(() => {
     if (!socket) return;
     socket.on('roomCreated', (data: StartGame) => {
-      // const { roomDb, userRoomDb, userSeatDb } = data;
-      // setRoomData(roomDb);
-      // setUserRoomData(userRoomDb);
-      // setUserSeatData(userSeatDb);
       setRoomState((prev) => ({
         ...prev,
         room: data.roomDb,
@@ -87,28 +70,10 @@ const TestGame = () => {
       const { UserRooms } = data;
       const userRoomDb = UserRooms.find((ur) => ur.name === socket.id);
       console.log('User room db: ', userRoomDb);
-      // setRoomData({
-      //   roomOpenTime: data.roomOpenTime,
-      //   roomCloseTime: data.roomCloseTime,
-      //   maxRoomSize: data.maxRoomSize,
-      //   url: data.url,
-      //   gameTableId: data.gameTableId,
-      //   id: data.id,
-      // });
       if (!userRoomDb) {
         console.error('User room not found in roomJoined event');
         return;
       }
-      // const userRoomData = {
-      //   id: userRoomDb.id,
-      //   userId: userRoomDb.userId,
-      //   roomId: userRoomDb.roomId,
-      //   host: userRoomDb.host,
-      //   name: userRoomDb.name,
-      //   initialStack: userRoomDb.initialStack,
-      // };
-      // console.log('User room data set: ', userRoomData);
-      // setUserRoomData(userRoomData);
       setRoomState((prev) => ({
         ...prev,
         room: {
@@ -142,21 +107,9 @@ const TestGame = () => {
         }
         return prev; // Otherwise, return previous state without changes
       });
-      // setSeatTaken(true);
-      // setUserRoomData((prevUserRoomData) => {
-      //   console.log('Previous user room data: ', prevUserRoomData);
-
-      //   if (data.userRoomId === prevUserRoomData?.id) {
-      //     console.log('Setting user seat data');
-      //     setUserSeatData(data);
-      //   }
-
-      //   return prevUserRoomData; // Ensure no unwanted state mutation
-      // });
     });
     socket.on('gameStarted', () => {
       console.log('Game started');
-      // setStartBetting(true);
       setGameState((prev) => ({
         ...prev,
         startBetting: true,
@@ -164,23 +117,21 @@ const TestGame = () => {
     });
     socket.on('betsPlaced', () => {
       console.log('Bets placed');
-      // setStartBetting(false);
       setGameState((prev) => ({
         ...prev,
         startBetting: false,
       }));
     });
-    // socket.on('cardsDealt', () => {
-    //   console.log('Cards dealt');
-    //   // setCardsDealt(true);
-    // });
+    socket.on('gameReset', () => {
+      console.log('Game reset');
+      setGameState((prev) => ({
+        ...prev,
+        startBetting: true,
+      }));
+    });
     socket.on('gameState', (gs: GameState) => {
       console.log('Received game state:', gs);
       if (!gs) return;
-      // console.log('User position: ', positionHelper(userSeatData));
-      // setUserCards([...gs.seats[positionHelper(userSeatData)].hands[0].cards]);
-      // setDealerCards(gs.dealerHand);
-      // setGameState(gs);
       setGameState((prev) => ({
         ...prev,
         gameData: gs,
@@ -192,7 +143,6 @@ const TestGame = () => {
       socket.off('seatTaken');
       socket.off('gameStarted');
       socket.off('betsPlaced');
-      // socket.off('cardsDealt');
       socket.off('gameState');
     };
   }, [socket]);
@@ -260,8 +210,6 @@ const TestGame = () => {
         seatIndex: positionHelper(roomState.userSeat),
         handIndex: 0,
       };
-      // setStartBetting(true);
-      // setCardsDealt(false);
       setGameState((prev) => ({
         ...prev,
         startBetting: true,
@@ -314,7 +262,6 @@ const TestGame = () => {
   };
 
   const renderPlayer = () => {
-    // const playerHand = gameState?.seats[positionHelper(userSeatData)]?.hands[0];
     if (!gameState.gameData || !roomState.userSeat) return null; // Ensure game data exists
     const playerHand = getHand(gameState.gameData, roomState.userSeat);
     const playerCards = getCards(gameState.gameData, roomState.userSeat);
@@ -325,11 +272,15 @@ const TestGame = () => {
         <h2>Player Count: {playerCount}</h2>
         {playerCount > 21 && <h2>Player Bust</h2>}
         {playerHand?.isBlackjack && <h2>BlackJack!</h2>}
-        {playerHand?.isDone && playerHand?.isWon && <h2>Player Won</h2>}
-        {playerHand?.isDone && !playerHand?.isWon && !playerHand?.isPush && (
-          <h2>Player Lost</h2>
+        {gameState.gameData.roundOver && (
+          <>
+            {playerHand?.isDone && playerHand?.isWon && <h2>Player Won</h2>}
+            {playerHand?.isDone &&
+              !playerHand?.isWon &&
+              !playerHand?.isPush && <h2>Player Lost</h2>}
+            {playerHand?.isDone && playerHand?.isPush && <h2>Player Push</h2>}
+          </>
         )}
-        {playerHand?.isDone && playerHand?.isPush && <h2>Player Push</h2>}
         {playerCards.map((card, index) => (
           <CardDisplay
             key={`${card.suit}-${card.value}-${index}`}
@@ -340,70 +291,6 @@ const TestGame = () => {
     );
   };
 
-  // return (
-  //   <div>
-  //     <h1>Test Game</h1>
-
-  //     {!roomState.room && !roomState.userRoom ? (
-  //       <>
-  //         <button onClick={createRoom}>Create Room</button>
-  //         <button onClick={joinRoom}>Join Room</button>
-  //         <input
-  //           type="text"
-  //           onChange={(e) => setJoinRoomData({ roomUrl: e.target.value })}
-  //         />
-  //       </>
-  //     ) : (
-  //       <>
-  //         {roomData &&
-  //           userRoomData &&
-  //           !startBetting &&
-  //           !cardsDealt &&
-  //           userRoomData.host && (
-  //             <button onClick={startGame}>Start Game</button>
-  //           )}
-
-  //         {userRoomData && !userSeatData && !seatTaken && (
-  //           <button onClick={takeSeat}>Take Seat</button>
-  //         )}
-
-  //         {startBetting && (
-  //           <div>
-  //             <button onClick={() => takeAction('Bet')}>Bet</button>
-  //             <input
-  //               type="number"
-  //               onChange={(e) => handleBetAmount(e.target.value)}
-  //             />
-  //           </div>
-  //         )}
-
-  //         {cardsDealt && (
-  //           <>
-  //             <div>{renderDealer()}</div>
-  //             <div>{renderPlayer()}</div>
-
-  //             {!gameState?.roundOver ? (
-  //               <>
-  //                 <button onClick={() => takeAction('Hit')}>Hit</button>
-  //                 <button onClick={() => takeAction('Stand')}>Stand</button>
-  //               </>
-  //             ) : (
-  //               <button onClick={() => takeAction('Reset')}>Reset</button>
-  //             )}
-  //           </>
-  //         )}
-
-  //         {gameState?.seats[positionHelper(userSeatData)]?.player?.stack !==
-  //           undefined && (
-  //           <h1>
-  //             Stack:{' '}
-  //             {gameState.seats[positionHelper(userSeatData)]?.player?.stack}
-  //           </h1>
-  //         )}
-  //       </>
-  //     )}
-  //   </div>
-  // );
   return (
     <div>
       <h1>Test Game</h1>
@@ -460,9 +347,9 @@ const TestGame = () => {
                   <button onClick={() => takeAction('Hit')}>Hit</button>
                   <button onClick={() => takeAction('Stand')}>Stand</button>
                 </>
-              ) : (
+              ) : roomState.userRoom?.host ? (
                 <button onClick={() => takeAction('Reset')}>Reset</button>
-              )}
+              ) : null}
             </>
           )}
 
@@ -490,12 +377,6 @@ const CardDisplay = ({ card }: { card: { suit: string; value: string } }) => (
     <p>{card.value}</p>
   </div>
 );
-
-// const centeredColumn = {
-//   display: 'flex',
-//   alignItems: 'center',
-//   flexDirection: 'column',
-// };
 
 export default TestGame;
 

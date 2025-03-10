@@ -80,19 +80,9 @@ export const registerSocketEvents = (
       io.to(actionData.roomUrl).emit('error', result.error.message);
       return;
     }
-    // TODO authorize action with redis
-    // if (!(socket as CustomSocket).roomUrl.has(actionData.roomUrl)) {
-    //   console.error('User not in room:', actionData.roomUrl);
-    //   socket.emit('error', 'User not in room');
-    // }
     handleTakeAction(io, socket, context, turnQueue, actionData);
   });
   socket.on('takeSeat', (takeSeatData: TakeSeat) => {
-    // if (!takeSeatData.roomUrl) return;
-    // if (!(socket as CustomSocket).roomUrl.has(takeSeatData.roomUrl)) {
-    //   console.error('User not in room:', takeSeatData.roomUrl);
-    //   socket.emit('error', 'User not in room');
-    // }
     const result = takeSeatSchema.safeParse(takeSeatData);
     if (!result.success) {
       io.to(takeSeatData.roomUrl).emit('error', result.error.message);

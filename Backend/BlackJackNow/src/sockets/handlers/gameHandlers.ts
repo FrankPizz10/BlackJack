@@ -13,6 +13,7 @@ import {
 import { ActionEvent, Action } from '@shared-types/Game/Action';
 import { RoomWithUsersAndSeats } from '@shared-types/db/UserRoom';
 import { isAuthorizedGameAction } from '../../middleware/gameAuthorization';
+import { getRoomInfoByUrl } from '../../services/roomsService';
 
 export const startGame = async (
   io: Server,
@@ -69,7 +70,18 @@ export const handleTakeAction = async (
       seatIndex: actionEvent.seatIndex,
       handIndex: actionEvent.handIndex,
     };
-    if (!isAuthorizedGameAction(socket.data.userId, actionEvent, gameState)) {
+    const roomWithUsersAndSeats = await getRoomInfoByUrl(
+      context,
+      actionEvent.roomUrl
+    );
+    if (
+      !isAuthorizedGameAction(
+        socket.data.userId,
+        actionEvent,
+        gameState,
+        roomWithUsersAndSeats
+      )
+    ) {
       console.error('Unauthorized action');
       io.to(actionEvent.roomUrl).emit('error', 'Unauthorized action');
       return;
@@ -97,6 +109,9 @@ export const handleTakeAction = async (
         'gameState',
         removeFaceDownCards(newGameState)
       );
+      if (actionEvent.actionType === 'Reset') {
+        io.to(actionEvent.roomUrl).emit('gameReset');
+      }
     } catch (err) {
       console.error('Error updating game state:', err);
     }

@@ -1,10 +1,12 @@
+import { RoomWithUsersAndSeats } from '@shared-types/db/UserRoom';
 import { ActionEvent } from '@shared-types/Game/Action';
 import { GameState } from '@shared-types/Game/GameState';
 
 export const isAuthorizedGameAction = (
   id: number,
   action: ActionEvent,
-  gameState: GameState
+  gameState: GameState,
+  roomData: RoomWithUsersAndSeats
 ): boolean => {
   // Get all seats for the user
   const seats = gameState.seats.filter((seat) => seat.player?.user_ID === id);
@@ -24,6 +26,10 @@ export const isAuthorizedGameAction = (
   }
   if (gameState.seats[action.seatIndex].handIndex === action.handIndex)
     return true;
+  if (action.actionType === 'Reset') {
+    const host = roomData.UserRooms.find((userRoom) => userRoom.host === true);
+    if (host?.userId === id) return true;
+  }
   return false;
 };
 
