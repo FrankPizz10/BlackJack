@@ -484,6 +484,17 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
         actionSuccess: true,
       };
     }
+    // Next player's turn
+    else {
+      return {
+        gs: {
+          ...gamestateAfterAction,
+          seats: updatedSeats,
+          turnIndex: gs.turnIndex + 1,
+        },
+        actionSuccess: true,
+      };
+    }
   }
 
   return {
