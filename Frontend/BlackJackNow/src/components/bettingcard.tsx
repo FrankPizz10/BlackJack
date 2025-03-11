@@ -1,42 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
-const BettingCard = ({ onBetSubmit, playerStack = 0 }) => {
+interface BettingCardProps {
+  onBetSubmit: (betAmount: number) => void;
+  playerStack: number;
+}
+
+const BettingCard: React.FC<BettingCardProps> = ({
+  onBetSubmit,
+  playerStack = 0,
+}) => {
   const [betAmount, setBetAmount] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
-  
+
   const presetMultipliers = [0.5, 2, 5, 10];
 
-  const handleSliderChange = (e) => {
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     setSliderValue(value);
     setBetAmount(Math.round(value * playerStack * 100) / 100);
   };
 
-  const handleMultiplierClick = (multiplier) => {
+  const handleMultiplierClick = (multiplier: number | 'max') => {
     if (multiplier === 'max') {
       setSliderValue(1);
       setBetAmount(playerStack);
       return;
     }
-    
+
     const newAmount = Math.round(betAmount * multiplier * 100) / 100;
     const clampedAmount = Math.min(newAmount, playerStack);
     setBetAmount(clampedAmount);
     setSliderValue(clampedAmount / playerStack);
   };
 
-  const handleInputChange = (e) => {
-    let value = e.target.value.replace(/[^0-9.]/g, '');
-    value = parseFloat(value);
-    
-    if (isNaN(value)) {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^0-9.]/g, '');
+    const numericValue = parseFloat(value);
+
+    if (isNaN(numericValue)) {
       setBetAmount(0);
       setSliderValue(0);
       return;
     }
 
-    const clampedValue = Math.min(Math.max(value, 0), playerStack);
+    const clampedValue = Math.min(Math.max(numericValue, 0), playerStack);
     setBetAmount(clampedValue);
     setSliderValue(clampedValue / playerStack);
   };
@@ -56,12 +64,12 @@ const BettingCard = ({ onBetSubmit, playerStack = 0 }) => {
     fontSize: '0.875rem',
     fontWeight: 500,
     transition: 'background-color 0.2s',
-    width: '4rem'
+    width: '4rem',
   };
 
   const disabledButtonStyle = {
     opacity: 0.5,
-    cursor: 'not-allowed'
+    cursor: 'not-allowed',
   };
 
   const placeBetButtonStyle = {
@@ -74,11 +82,11 @@ const BettingCard = ({ onBetSubmit, playerStack = 0 }) => {
     borderRadius: '0.5rem',
     fontSize: '1.125rem',
     fontWeight: 700,
-    transition: 'background-color 0.2s'
+    transition: 'background-color 0.2s',
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0.8, opacity: 0 }}
@@ -86,23 +94,28 @@ const BettingCard = ({ onBetSubmit, playerStack = 0 }) => {
         backgroundColor: '#0f172a',
         padding: '1.5rem',
         borderRadius: '0.75rem',
-        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        boxShadow:
+          '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
         width: '100%',
         maxWidth: '56rem',
         display: 'flex',
         flexDirection: 'column',
-        gap: '1rem'
+        gap: '1rem',
       }}
     >
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '1.5rem' 
-      }}>
-        <div style={{ 
-          width: '12rem', 
-          position: 'relative' 
-        }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1.5rem',
+        }}
+      >
+        <div
+          style={{
+            width: '12rem',
+            position: 'relative',
+          }}
+        >
           <input
             type="text"
             value={`$${betAmount.toFixed(2)}`}
@@ -120,25 +133,31 @@ const BettingCard = ({ onBetSubmit, playerStack = 0 }) => {
               paddingRight: '1rem',
               borderRadius: '0.5rem',
               textAlign: 'center',
-              ...(isBettingDisabled ? { opacity: 0.5, cursor: 'not-allowed' } : {})
+              ...(isBettingDisabled
+                ? { opacity: 0.5, cursor: 'not-allowed' }
+                : {}),
             }}
           />
-          <div style={{ 
-            color: '#94a3b8', 
-            fontSize: '0.875rem', 
-            marginTop: '0.25rem', 
-            textAlign: 'center' 
-          }}>
+          <div
+            style={{
+              color: '#94a3b8',
+              fontSize: '0.875rem',
+              marginTop: '0.25rem',
+              textAlign: 'center',
+            }}
+          >
             Stack: ${playerStack.toFixed(2)}
           </div>
         </div>
 
-        <div style={{ 
-          flex: 1, 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '1rem' 
-        }}>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+          }}
+        >
           <input
             type="range"
             min="0"
@@ -157,7 +176,7 @@ const BettingCard = ({ onBetSubmit, playerStack = 0 }) => {
               opacity: isBettingDisabled ? 0.5 : 1,
             }}
           />
-          
+
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             {presetMultipliers.map((multiplier) => (
               <motion.button
@@ -168,7 +187,9 @@ const BettingCard = ({ onBetSubmit, playerStack = 0 }) => {
                 disabled={isBettingDisabled || betAmount <= 0}
                 style={{
                   ...buttonBaseStyle,
-                  ...(isBettingDisabled || betAmount <= 0 ? disabledButtonStyle : {})
+                  ...(isBettingDisabled || betAmount <= 0
+                    ? disabledButtonStyle
+                    : {}),
                 }}
                 onMouseOver={(e) => {
                   if (!(isBettingDisabled || betAmount <= 0)) {
@@ -191,7 +212,7 @@ const BettingCard = ({ onBetSubmit, playerStack = 0 }) => {
               disabled={isBettingDisabled}
               style={{
                 ...buttonBaseStyle,
-                ...(isBettingDisabled ? disabledButtonStyle : {})
+                ...(isBettingDisabled ? disabledButtonStyle : {}),
               }}
               onMouseOver={(e) => {
                 if (!isBettingDisabled) {
@@ -215,7 +236,9 @@ const BettingCard = ({ onBetSubmit, playerStack = 0 }) => {
             disabled={isBettingDisabled || betAmount <= 0}
             style={{
               ...placeBetButtonStyle,
-              ...(isBettingDisabled || betAmount <= 0 ? disabledButtonStyle : {})
+              ...(isBettingDisabled || betAmount <= 0
+                ? disabledButtonStyle
+                : {}),
             }}
             onMouseOver={(e) => {
               if (!(isBettingDisabled || betAmount <= 0)) {
@@ -237,3 +260,4 @@ const BettingCard = ({ onBetSubmit, playerStack = 0 }) => {
 };
 
 export default BettingCard;
+

@@ -2,19 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BettingCard from './bettingcard';
 
-const ActionCard = ({ onAction, canDouble = true, canSplit = false, canSurrender = true, isVisible }) => {
+interface ActionCardProps {
+  onAction: (action: string) => void;
+  canDouble: boolean;
+  canSplit: boolean;
+  canSurrender: boolean;
+  isVisible: boolean;
+}
+
+const ActionCard: React.FC<ActionCardProps> = ({
+  onAction,
+  canDouble = true,
+  canSplit = false,
+  canSurrender = true,
+  isVisible,
+}) => {
   const buttonBaseStyle = {
     color: 'white',
     fontWeight: 500,
     borderRadius: '0.5rem',
-    transition: 'background-color 0.2s'
+    transition: 'background-color 0.2s',
   };
-  
+
   const disabledButtonStyle = {
     opacity: 0.5,
-    cursor: 'not-allowed'
+    cursor: 'not-allowed',
   };
-  
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -22,21 +36,24 @@ const ActionCard = ({ onAction, canDouble = true, canSplit = false, canSurrender
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           style={{
             backgroundColor: '#0f172a',
             padding: '1rem',
             borderRadius: '0.75rem',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            boxShadow:
+              '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
             width: '100%',
-            maxWidth: '56rem'
+            maxWidth: '56rem',
           }}
         >
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(6, 1fr)', 
-            gap: '0.75rem' 
-          }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(6, 1fr)',
+              gap: '0.75rem',
+            }}
+          >
             {/* Double */}
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -51,10 +68,12 @@ const ActionCard = ({ onAction, canDouble = true, canSplit = false, canSurrender
                 ...(canDouble ? {} : disabledButtonStyle),
               }}
               onMouseOver={(e) => {
-                if (canDouble) e.currentTarget.style.backgroundColor = '#475569';
+                if (canDouble)
+                  e.currentTarget.style.backgroundColor = '#475569';
               }}
               onMouseOut={(e) => {
-                if (canDouble) e.currentTarget.style.backgroundColor = '#334155';
+                if (canDouble)
+                  e.currentTarget.style.backgroundColor = '#334155';
               }}
             >
               Double
@@ -70,7 +89,7 @@ const ActionCard = ({ onAction, canDouble = true, canSplit = false, canSurrender
                 gridColumn: 'span 2 / span 2',
                 backgroundColor: '#475569',
                 padding: '0.75rem 0',
-                fontSize: '1.125rem'
+                fontSize: '1.125rem',
               }}
               onMouseOver={(e) => {
                 e.currentTarget.style.backgroundColor = '#64748b';
@@ -92,7 +111,7 @@ const ActionCard = ({ onAction, canDouble = true, canSplit = false, canSurrender
                 gridColumn: 'span 2 / span 2',
                 backgroundColor: '#475569',
                 padding: '0.75rem 0',
-                fontSize: '1.125rem'
+                fontSize: '1.125rem',
               }}
               onMouseOver={(e) => {
                 e.currentTarget.style.backgroundColor = '#64748b';
@@ -115,13 +134,15 @@ const ActionCard = ({ onAction, canDouble = true, canSplit = false, canSurrender
                 gridColumn: 'span 1 / span 1',
                 backgroundColor: '#334155',
                 padding: '0.75rem 0',
-                ...(canSurrender ? {} : disabledButtonStyle)
+                ...(canSurrender ? {} : disabledButtonStyle),
               }}
               onMouseOver={(e) => {
-                if (canSurrender) e.currentTarget.style.backgroundColor = '#475569';
+                if (canSurrender)
+                  e.currentTarget.style.backgroundColor = '#475569';
               }}
               onMouseOut={(e) => {
-                if (canSurrender) e.currentTarget.style.backgroundColor = '#334155';
+                if (canSurrender)
+                  e.currentTarget.style.backgroundColor = '#334155';
               }}
             >
               Surrender
@@ -140,7 +161,7 @@ const ActionCard = ({ onAction, canDouble = true, canSplit = false, canSurrender
                   ...buttonBaseStyle,
                   gridColumn: 'span 1 / span 1',
                   backgroundColor: '#334155',
-                  padding: '0.75rem 0'
+                  padding: '0.75rem 0',
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.backgroundColor = '#475569';
@@ -159,15 +180,25 @@ const ActionCard = ({ onAction, canDouble = true, canSplit = false, canSurrender
   );
 };
 
+interface BlackjackControlsProps {
+  playerStack: number;
+  onBetSubmit: (amount: number) => void;
+  onAction: (action: string) => void;
+  gamePhase?: 'betting' | 'action';
+  canDouble: boolean;
+  canSplit: boolean;
+  canSurrender: boolean;
+}
+
 // Container component to manage the transition between betting and actions
-const BlackjackControls = ({ 
+const BlackjackControls: React.FC<BlackjackControlsProps> = ({
   playerStack,
   onBetSubmit,
   onAction,
   gamePhase = 'betting', // 'betting' or 'action'
   canDouble,
   canSplit,
-  canSurrender 
+  canSurrender,
 }) => {
   const [previousPhase, setPreviousPhase] = useState(gamePhase);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -176,7 +207,7 @@ const BlackjackControls = ({
     if (gamePhase !== previousPhase) {
       setIsTransitioning(true);
       setPreviousPhase(gamePhase);
-      
+
       // Allow time for exit animation
       setTimeout(() => {
         setIsTransitioning(false);
@@ -188,7 +219,7 @@ const BlackjackControls = ({
     <div style={{ position: 'relative' }}>
       <AnimatePresence mode="wait">
         {gamePhase === 'betting' && !isTransitioning ? (
-          <BettingCard 
+          <BettingCard
             playerStack={playerStack}
             onBetSubmit={(amount) => {
               setIsTransitioning(true);
@@ -210,3 +241,4 @@ const BlackjackControls = ({
 };
 
 export default BlackjackControls;
+

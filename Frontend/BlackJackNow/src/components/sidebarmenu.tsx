@@ -1,19 +1,36 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, ChevronRight, User, Settings, BookOpen, Users, Wallet } from 'lucide-react';
+import { motion, AnimatePresence, MotionStyle } from 'framer-motion';
+import {
+  Menu,
+  ChevronRight,
+  User,
+  Settings,
+  BookOpen,
+  Users,
+  Wallet,
+} from 'lucide-react';
 
-const SidebarMenu = ({ onOptionClick, onLeaveSeat, onAway }) => {
+interface SidebarMenuProps {
+  onOptionClick: (optionId: string) => void;
+  onLeaveSeat: () => void;
+  onAway: () => void;
+}
+const SidebarMenu: React.FC<SidebarMenuProps> = ({
+  onOptionClick,
+  onLeaveSeat,
+  onAway,
+}) => {
   const [optionsOpen, setOptionsOpen] = useState(false);
 
   const menuOptions = [
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'ledger', label: 'Ledger', icon: Wallet },
     { id: 'rules', label: 'Rules', icon: BookOpen },
-    { id: 'players', label: 'Players', icon: Users }
+    { id: 'players', label: 'Players', icon: Users },
   ];
 
   // Common button styles
-  const buttonStyle = {
+  const buttonStyle: MotionStyle = {
     width: '3rem',
     height: '3rem',
     backgroundColor: '#1e293b',
@@ -22,19 +39,19 @@ const SidebarMenu = ({ onOptionClick, onLeaveSeat, onAway }) => {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'background-color 0.2s'
+    transition: 'background-color 0.2s',
   };
 
   const buttonTextStyle = {
     fontSize: '0.75rem',
     color: '#94a3b8',
-    marginTop: '0.25rem'
+    marginTop: '0.25rem',
   };
 
   const iconStyle = {
     width: '1.5rem',
     height: '1.5rem',
-    color: '#cbd5e1'
+    color: '#cbd5e1',
   };
 
   const dropdownButtonStyle = {
@@ -48,32 +65,37 @@ const SidebarMenu = ({ onOptionClick, onLeaveSeat, onAway }) => {
     paddingBottom: '0.5rem',
     color: '#cbd5e1',
     borderRadius: '0.5rem',
-    transition: 'background-color 0.2s'
+    transition: 'background-color 0.2s',
   };
 
   const dropdownIconStyle = {
     width: '1rem',
-    height: '1rem'
+    height: '1rem',
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      left: 0,
-      top: 0,
-      backgroundColor: '#0f172a',
-      borderTopRightRadius: '0.75rem',
-      borderBottomRightRadius: '0.75rem',
-      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-      zIndex: 50
-    }}>
-      <div style={{
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: '0.5rem',
-        gap: '1rem'
-      }}>
+    <div
+      style={{
+        position: 'fixed',
+        left: 0,
+        top: 0,
+        backgroundColor: '#0f172a',
+        borderTopRightRadius: '0.75rem',
+        borderBottomRightRadius: '0.75rem',
+        boxShadow:
+          '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        zIndex: 50,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          padding: '0.5rem',
+          gap: '1rem',
+        }}
+      >
         {/* Away Button */}
         <motion.button
           whileHover={{ scale: 1.05 }}
@@ -105,11 +127,15 @@ const SidebarMenu = ({ onOptionClick, onLeaveSeat, onAway }) => {
           }}
         >
           <ChevronRight style={iconStyle} />
-          <span style={{
-            ...buttonTextStyle,
-            textAlign: 'center',
-            lineHeight: '1'
-          }}>LEAVE SEAT</span>
+          <span
+            style={{
+              ...buttonTextStyle,
+              textAlign: 'center',
+              lineHeight: '1',
+            }}
+          >
+            LEAVE SEAT
+          </span>
         </motion.button>
 
         {/* Options Button with Dropdown */}
@@ -144,9 +170,10 @@ const SidebarMenu = ({ onOptionClick, onLeaveSeat, onAway }) => {
                   marginLeft: '0.5rem',
                   backgroundColor: '#1e293b',
                   borderRadius: '0.5rem',
-                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                  boxShadow:
+                    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
                   padding: '0.5rem',
-                  width: '10rem'
+                  width: '10rem',
                 }}
               >
                 {menuOptions.map((option) => {
@@ -169,7 +196,9 @@ const SidebarMenu = ({ onOptionClick, onLeaveSeat, onAway }) => {
                       }}
                     >
                       <Icon style={dropdownIconStyle} />
-                      <span style={{ fontSize: '0.875rem' }}>{option.label}</span>
+                      <span style={{ fontSize: '0.875rem' }}>
+                        {option.label}
+                      </span>
                     </motion.button>
                   );
                 })}
@@ -183,3 +212,4 @@ const SidebarMenu = ({ onOptionClick, onLeaveSeat, onAway }) => {
 };
 
 export default SidebarMenu;
+
