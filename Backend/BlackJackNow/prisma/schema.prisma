@@ -68,7 +68,7 @@ model User_Room {
   name          String
   user          Users       @relation(fields: [userId], references: [id])
   room          Rooms       @relation(fields: [roomId], references: [id])
-  Seats         Seats?
+  Seats         Seats[]
   GameRequests  Game_Requests[]
   
   @@unique([userId, roomId])
