@@ -86,7 +86,8 @@ export const checkEligibleAction = (gs: GameState): ActionType[] => {
     ((!hasAce && [9, 10, 11].includes(total)) ||
       (hasAce && [16, 17, 18].includes(total))) &&
     seat.player &&
-    seat.player.stack >= hand.bet
+    seat.player.stack >= hand.bet &&
+    hand.cards.length === 2
   ) {
     actions.push('Double Down');
   }
@@ -204,6 +205,10 @@ export const handleDoubleDown = (
   gs: GameState
 ): { actionIsDone: boolean; gs: GameState } => {
   const currentHand = gs.seats[gs.turnIndex].handIndex;
+  const seat = gs.seats[gs.turnIndex];
+  // Check if there is a player
+  if (!seat.player) return { actionIsDone: false, gs };
+
   const { deck } = gs;
   const cardResult = drawCard(deck, gs);
   if (!cardResult) {
@@ -213,22 +218,23 @@ export const handleDoubleDown = (
   const drawGameState = cardResult.gs;
 
   const updatedHand: Hand = {
-    ...drawGameState.seats[gs.turnIndex].hands[currentHand],
-    cards: [
-      ...drawGameState.seats[gs.turnIndex].hands[currentHand].cards,
-      { ...card, faceUp: true },
-    ],
+    ...seat.hands[currentHand],
+    cards: [...seat.hands[currentHand].cards, { ...card, faceUp: true }],
     isDone: true,
-    bet: drawGameState.seats[gs.turnIndex].hands[currentHand].bet * 2,
+    bet: seat.hands[currentHand].bet * 2,
   };
 
   const updatedSeat: Seat = {
-    ...drawGameState.seats[gs.turnIndex],
+    ...seat,
     hands: [
-      ...drawGameState.seats[gs.turnIndex].hands.slice(0, currentHand),
+      ...seat.hands.slice(0, currentHand),
       updatedHand,
-      ...drawGameState.seats[gs.turnIndex].hands.slice(currentHand + 1),
+      ...seat.hands.slice(currentHand + 1),
     ],
+    player: {
+      ...seat.player,
+      stack: seat.player.stack - seat.hands[currentHand].bet,
+    },
   };
   return {
     actionIsDone: true,
@@ -356,7 +362,19 @@ export interface ActionResult {
   actionSuccess: boolean;
 }
 
-// Main method: take_action
+/**
+ * Executes a game action and updates the game state accordingly.
+ *
+ * @param {GameState} gs - The current state of the game.
+ * @param {Action} action - The action to be performed, including type and optional bet information.
+ * @returns {ActionResult} - The result of the action, including the updated game state and a success flag.
+ *
+ * This function handles various game actions such as 'Bet', 'Hit', 'Stand', 'Double Down', 'Split', 'Deal',
+ * 'Reset', and 'Dealer'. It validates the action, updates the game state, and determines if the round or
+ * player's turn is over. If all seats have completed their actions, the dealer's hand is played, and the
+ * round is concluded, including payout and deck shuffling if necessary.
+ */
+
 export const takeAction = (gs: GameState, action: Action): ActionResult => {
   if (action.actionType === 'Bet' && action.bet) {
     const betResult = handleBet(gs, action.bet);

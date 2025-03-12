@@ -192,6 +192,15 @@ const TestGame = () => {
         seatIndex: positionHelper(roomState.userSeat),
         handIndex: 0,
       };
+    } else if (actionType === 'Double Down') {
+      console.log('Action Double Down: ', actionType);
+      action = {
+        roomUrl: roomState.room.url,
+        actionType: actionType,
+        bet: null,
+        seatIndex: positionHelper(roomState.userSeat),
+        handIndex: 0,
+      };
     } else if (actionType === 'Stand') {
       console.log('Action Stand: ', actionType);
       action = {
@@ -346,6 +355,9 @@ const TestGame = () => {
                 <>
                   <button onClick={() => takeAction('Hit')}>Hit</button>
                   <button onClick={() => takeAction('Stand')}>Stand</button>
+                  <button onClick={() => takeAction('Double Down')}>
+                    Double
+                  </button>
                 </>
               ) : roomState.userRoom?.host ? (
                 <button onClick={() => takeAction('Reset')}>Reset</button>

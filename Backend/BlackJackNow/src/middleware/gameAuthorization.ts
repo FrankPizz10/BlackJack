@@ -2,6 +2,19 @@ import { RoomWithUsersAndSeats } from '@shared-types/db/UserRoom';
 import { ActionEvent } from '@shared-types/Game/Action';
 import { GameState } from '@shared-types/Game/GameState';
 
+/**
+ * Checks if the user is authorized to take the given action in the game.
+ *
+ * A user is authorized if they are in the seat that the action is being taken
+ * for, if they are the one who made a bet, or if they are the host and the action
+ * is a 'Reset'.
+ *
+ * @param id - The ID of the user taking the action.
+ * @param action - The action being taken.
+ * @param gameState - The current state of the game.
+ * @param roomData - The room data.
+ * @returns true if the user is authorized, false otherwise.
+ */
 export const isAuthorizedGameAction = (
   id: number,
   action: ActionEvent,
