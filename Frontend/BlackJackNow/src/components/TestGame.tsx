@@ -367,13 +367,15 @@ const TestGame = () => {
 
           {/* Display Player Stack */}
           {roomState.userSeat &&
-            gameState.gameData?.seats?.[positionHelper(roomState.userSeat)]
-              ?.player?.stack !== undefined && (
+            gameState.gameData?.players?.find(
+              (player) => player.userId === roomState.userRoom?.userId
+            )?.stack !== undefined && (
               <h1>
                 Stack:{' '}
                 {
-                  gameState.gameData.seats[positionHelper(roomState.userSeat)]
-                    ?.player?.stack
+                  gameState.gameData.players.find(
+                    (player) => player.userId === roomState.userRoom?.userId
+                  )?.stack
                 }
               </h1>
             )}

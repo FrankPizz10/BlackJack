@@ -165,10 +165,11 @@ export const handleTakeSeat = async (
     const gameState: GameState = JSON.parse(gameStateRaw);
     if (!gameState) return console.error('Game state invalid');
     const player: Player = {
-      user_ID: user.id,
+      userId: user.id,
       stack: 100,
       userRoomDbId: roomInfo.UserRooms.find((ur) => ur.userId === user.id)!.id,
-      gameTableDbId: roomInfo.gameTableId,
+      isAfk: false,
+      seatIndexes: [seat.position - 1],
     };
     const updatedGameState = takeSeat(gameState, player, seat.position);
     // broadcast player joined room
