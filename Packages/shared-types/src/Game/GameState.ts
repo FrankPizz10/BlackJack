@@ -294,7 +294,7 @@ export const handleSplit = (
   };
 
   return {
-    actionIsDone: true,
+    actionIsDone: false,
     gs: {
       ...gs,
       seats: [
@@ -491,7 +491,16 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
         updatedSeats.push(gamestateAfterAction.seats[i]);
       }
     }
-
+    // Check if all hands are done
+    if (!areAllHandsDone(gamestateAfterAction)) {
+      return {
+        gs: {
+          ...gamestateAfterAction,
+          seats: updatedSeats,
+        },
+        actionSuccess: true,
+      };
+    }
     if (areAllSeatsDone(gamestateAfterAction)) {
       // Play the dealer hand
       const updatedGsAfterDealer = handleDealer({
@@ -546,6 +555,11 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
 const areAllSeatsDone = (gs: GameState): boolean => {
   const activeSeats = getActiveSeats(gs);
   return activeSeats.every((seat) => seat.hands.every((hand) => hand.isDone));
+};
+
+const areAllHandsDone = (gs: GameState): boolean => {
+  const currentSeat = gs.seats[gs.turnIndex];
+  return currentSeat.hands.every((hand) => hand.isDone);
 };
 
 const payoutHands = (gs: GameState): GameState => {
@@ -799,7 +813,12 @@ export const dealCards = (gs: GameState): GameState => {
   }
 
   // Check if the round is over (all players are done)
-  if (updatedSeatsWithBlackjack.every((seat) => seat.hands[0].isDone)) {
+  if (
+    updatedSeatsWithBlackjack.every(
+      (seat, index) =>
+        !activeSeatIndexes.includes(index) || seat.hands[0].isDone
+    )
+  ) {
     roundOver = true;
     return payoutHands({
       ...currentGs,
