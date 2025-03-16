@@ -54,9 +54,9 @@ import {
     });
   
     it('should process a valid action via takeAction', () => {
-      const action: Action = {
+      const action = {
         actionType: ActionType.Hit, // Using the correct ActionType
-        bet: { betAmount: 10, bettingSeat: 1 } as Bet,
+        bet: { betAmount: 10, bettingSeat: 1 } as Bet
       };
       const result = takeAction(gameState, action);
       expect(result.actionSuccess).toBe(true);
