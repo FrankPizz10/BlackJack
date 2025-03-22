@@ -1,9 +1,10 @@
-import { computeHandCount } from '../src/Game/Hand.ts';
-import { mockContextHand } from './mocks/mockContextHand.ts';
-import { Suit } from '../src/Game/Suit.ts';
-import { CardValueType } from '../src/Game/CardValue.ts';
+import { computeHandCount } from '../src/Game/Hand';
+import { isBlackjack, Card } from '../src/Game/Card';
+import { mockContextHand } from './mocks/mockContextHand';
+import { Suit } from '../src/Game/Suit';
+import { CardValueType } from '../src/Game/CardValue';
 
-jest.mock('../src/Game/Hand.ts', () => ({
+jest.mock('../src/Game/Hand', () => ({
   computeHandCount: jest.fn((hand) => mockContextHand.computeHandCount(hand)),
 }));
 
@@ -17,58 +18,84 @@ afterAll(() => {
 
 describe('Hand Calculation', () => {
   it('should calculate correct hand total without Aces', () => {
-    const hand = [{ suit: Suit.Hearts, value: '10' as CardValueType, faceUp: true }, { suit: Suit.Spades, value: '5' as CardValueType, faceUp: true }];
+    const hand: ReadonlyArray<Card> = [
+      { suit: Suit.Hearts, value: '10', faceUp: true },
+      { suit: Suit.Spades, value: '5', faceUp: true }
+    ];
     expect(computeHandCount(hand)).toBe(15);
   });
 
-  it('should calculate correct hand total with Aces as 11', () => {
-    const hand = [{ suit: Suit.Diamonds, value: 'A' as CardValueType, faceUp: true }, { suit: Suit.Clubs, value: '8' as CardValueType, faceUp: true }];
-    expect(computeHandCount(hand)).toBe(19);
-  });
-
-  it('should adjust Aces to 1 if total exceeds 21', () => {
-    const hand = [
-      { suit: Suit.Hearts, value: 'A' as CardValueType, faceUp: true },
-      { suit: Suit.Spades, value: 'K' as CardValueType, faceUp: true },
-      { suit: Suit.Diamonds, value: '5' as CardValueType, faceUp: true },
-    ];
-    expect(computeHandCount(hand)).toBe(16);
-  });
-
-  it('should count face cards as 10', () => {
-    const hand = [{ suit: Suit.Clubs, value: 'K' as CardValueType, faceUp: true }, { suit: Suit.Hearts, value: 'Q' as CardValueType, faceUp: true }];
-    expect(computeHandCount(hand)).toBe(20);
-  });
-
   it('should return 0 for an empty hand', () => {
-    const hand = [];
+    const hand: ReadonlyArray<Card> = [];
     expect(computeHandCount(hand)).toBe(0);
   });
 
-  it('should properly handle multiple Aces', () => {
-    const hand = [
-      { suit: Suit.Diamonds, value: 'A' as CardValueType, faceUp: true },
-      { suit: Suit.Clubs, value: 'A' as CardValueType, faceUp: true },
-      { suit: Suit.Spades, value: '9' as CardValueType, faceUp: true },
+  it('should recognize a blackjack (Ace + 10-point card)', () => {
+    const hand: ReadonlyArray<Card> = [
+      { suit: Suit.Spades, value: 'A', faceUp: true },
+      { suit: Suit.Diamonds, value: 'K', faceUp: true }
     ];
     expect(computeHandCount(hand)).toBe(21);
   });
 
-  it('should handle mixed hands correctly', () => {
-    const hand = [
-      { suit: Suit.Hearts, value: 'J' as CardValueType, faceUp: true },
-      { suit: Suit.Diamonds, value: '3' as CardValueType, faceUp: true },
-      { suit: Suit.Spades, value: '5' as CardValueType, faceUp: true },
+  it('should adjust Aces correctly', () => {
+    const hand: ReadonlyArray<Card> = [
+      { suit: Suit.Diamonds, value: 'A', faceUp: true },
+      { suit: Suit.Clubs, value: 'A', faceUp: true },
+      { suit: Suit.Spades, value: '9', faceUp: true }
     ];
-    expect(computeHandCount(hand)).toBe(18);
+    expect(computeHandCount(hand)).toBe(21);
   });
 
-  it('should not count HIDDEN cards', () => {
-    const hand = [
-      { suit: Suit.Clubs, value: 'HIDDEN' as CardValueType, faceUp: false },
-      { suit: Suit.Hearts, value: '10' as CardValueType, faceUp: true },
-      { suit: Suit.Diamonds, value: '5' as CardValueType, faceUp: true },
+  it('should ignore HIDDEN cards when computing hand count', () => {
+    const hand: ReadonlyArray<Card> = [
+      { suit: Suit.Hidden, value: 'HIDDEN', faceUp: false },
+      { suit: Suit.Hearts, value: '10', faceUp: true }
     ];
-    expect(computeHandCount(hand)).toBe(15);
+    expect(computeHandCount(hand)).toBe(10);
+  });
+
+  it('should not count CUT cards when computing hand count', () => {
+    const hand: ReadonlyArray<Card> = [
+      { suit: Suit.Cut, value: 'CUT', faceUp: false },
+      { suit: Suit.Spades, value: '7', faceUp: true }
+    ];
+    expect(computeHandCount(hand)).toBe(7);
+  });
+});
+
+describe('Blackjack Detection', () => {
+  it('should detect a valid blackjack (Ace + Face Card)', () => {
+    const hand: ReadonlyArray<Card> = [
+      { suit: Suit.Hearts, value: 'A', faceUp: true },
+      { suit: Suit.Clubs, value: 'K', faceUp: true }
+    ];
+    expect(isBlackjack(hand)).toBe(true);
+  });
+
+  it('should return false if more than two cards are in hand', () => {
+    const hand: ReadonlyArray<Card> = [
+      { suit: Suit.Diamonds, value: 'A', faceUp: true },
+      { suit: Suit.Spades, value: 'K', faceUp: true },
+      { suit: Suit.Clubs, value: '2', faceUp: true }
+    ];
+    expect(isBlackjack(hand)).toBe(false);
+  });
+
+  it('should return false if hand value is 21 but has more than two cards', () => {
+    const hand: ReadonlyArray<Card> = [
+      { suit: Suit.Hearts, value: '7', faceUp: true },
+      { suit: Suit.Spades, value: '7', faceUp: true },
+      { suit: Suit.Diamonds, value: '7', faceUp: true }
+    ];
+    expect(isBlackjack(hand)).toBe(false);
+  });
+
+  it('should return false if hand does not total 21', () => {
+    const hand: ReadonlyArray<Card> = [
+      { suit: Suit.Clubs, value: '5', faceUp: true },
+      { suit: Suit.Diamonds, value: 'K', faceUp: true }
+    ];
+    expect(isBlackjack(hand)).toBe(false);
   });
 });

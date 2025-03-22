@@ -2,13 +2,25 @@ import { Server, Socket } from 'socket.io';
 import { AppContext } from '../context';
 import { Queue } from 'bullmq';
 import { DbUser } from '@shared-types/db/User';
-import { handleCreateRoom, handleJoinRoom } from './handlers/roomHandlers';
+import {
+  handleCreateRoom,
+  handleJoinRoom,
+  handleTakeSeat,
+} from './handlers/roomHandlers';
 import { handleTakeAction, startGame } from './handlers/gameHandlers';
-import { JoinRoom, joinRoomSchema } from '@shared-types/db/Room';
-import { ActionEvent, eventSchema, Event } from '@shared-types/Game/Action';
-import { CustomSocket } from '.';
+import {
+  JoinRoom,
+  joinRoomSchema,
+  TakeSeat,
+  takeSeatSchema,
+} from '@shared-types/db/Room';
+import {
+  ActionEvent,
+  eventSchema,
+  Event,
+  actionEventSchema,
+} from '@shared-types/Game/Action';
 import { getRoomInfoByUrl } from '../services/roomsService';
-import { RoomWithUsersAndSeats } from '@shared-types/db/UserRoom';
 
 export const registerSocketEvents = (
   io: Server,
@@ -27,24 +39,16 @@ export const registerSocketEvents = (
       socket.emit('error', 'Invalid game data');
       return;
     }
-    if (!(socket as CustomSocket).roomUrl.has(startGameEvent.roomUrl)) {
-      console.error('User not in room:', startGameEvent.roomUrl);
-      socket.emit('error', 'User not in room');
-      return;
-    }
-    const roomInfo = await getRoomInfoByUrl(context, startGameEvent.roomUrl)!;
-    const roomWithUsersAndSeats: RoomWithUsersAndSeats = {
-      ...roomInfo.roomDb,
-      UserRooms: roomInfo.roomDb.UserRoom.map((userRoom) => ({
-        id: userRoom.id,
-        userId: userRoom.userId,
-        roomId: userRoom.roomId,
-        host: userRoom.host,
-        name: userRoom.name,
-        initialStack: userRoom.initialStack || 100,
-        UserSeat: userRoom.Seats!,
-      })),
-    };
+    // TODO check if user is in room from redis
+    // if (!(socket as CustomSocket).roomUrl.has(startGameEvent.roomUrl)) {
+    //   console.error('User not in room:', startGameEvent.roomUrl);
+    //   socket.emit('error', 'User not in room');
+    //   return;
+    // }
+    const roomWithUsersAndSeats = await getRoomInfoByUrl(
+      context,
+      startGameEvent.roomUrl
+    )!;
     const currentUserRoomAndSeat = roomWithUsersAndSeats.UserRooms.find(
       (userRoom) => userRoom.userId === user.id
     );
@@ -69,11 +73,19 @@ export const registerSocketEvents = (
     handleJoinRoom(io, socket, context, user, joinRoomData);
   });
   socket.on('takeAction', (actionData: ActionEvent) => {
-    if (!actionData.roomUrl) return;
-    if (!(socket as CustomSocket).roomUrl.has(actionData.roomUrl)) {
-      console.error('User not in room:', actionData.roomUrl);
-      socket.emit('error', 'User not in room');
+    const result = actionEventSchema.safeParse(actionData);
+    if (!result.success) {
+      io.to(actionData.roomUrl).emit('error', result.error.message);
+      return;
     }
-    handleTakeAction(io, context, turnQueue, actionData);
+    handleTakeAction(io, socket, context, turnQueue, actionData);
+  });
+  socket.on('takeSeat', (takeSeatData: TakeSeat) => {
+    const result = takeSeatSchema.safeParse(takeSeatData);
+    if (!result.success) {
+      io.to(takeSeatData.roomUrl).emit('error', result.error.message);
+      return;
+    }
+    handleTakeSeat(io, socket, context, user, takeSeatData);
   });
 };

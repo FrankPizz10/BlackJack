@@ -1,7 +1,8 @@
 import { ExtendedError, Socket } from 'socket.io';
 import { admin } from '../services/firebaseService';
 import { Request, Response, NextFunction } from 'express';
-import { CustomSocket } from '../sockets/index';
+import { AppContext } from '../context';
+import { getUserIdFromToken } from '../services/userService';
 
 const retrieveToken = (req: Request): string | null => {
   const authHeader = req.headers.authorization;
@@ -13,56 +14,57 @@ const retrieveToken = (req: Request): string | null => {
 };
 
 // Middleware function to check firebase authentication token
-export const firebaseAuthApi = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const token = retrieveToken(req);
-    if (!token) {
-      res.status(401).json({ error: 'Missing authentication token' });
-      return;
-    }
-
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    if (!decodedToken) {
-      res.status(401).json({ error: 'Invalid token' });
-      return;
-    }
-
-    res.locals.user = decodedToken;
-    return next();
-  } catch (error) {
-    console.error('Invalid token:', error);
-    res.status(500).json({ error: 'Invalid token' });
-  }
-};
-
-export const firebaseAuthSocket = (
-  socket: Socket,
-  next: (err?: ExtendedError) => void
-): void => {
-  const token = socket.handshake.auth?.token;
-
-  if (!token) {
-    return next(new Error('Authentication token is missing') as ExtendedError);
-  }
-
-  // Verify Firebase token asynchronously but ensure next() is called correctly
-  admin
-    .auth()
-    .verifyIdToken(token)
-    .then((decodedToken) => {
-      socket.data.userUid = decodedToken.uid; // Store user data in socket instance
-      // Ensure roomUrl is initialized before using .add()
-      if (!(socket as CustomSocket).roomUrl) {
-        (socket as CustomSocket).roomUrl = new Set();
+export const createFirebaseAuthApi =
+  (context: AppContext) =>
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const token = retrieveToken(req);
+      if (!token) {
+        res.status(401).json({ error: 'Missing authentication token' });
+        return;
       }
-      next(); // Proceed to the next middleware
-    })
-    .catch((error) => {
+
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      if (!decodedToken) {
+        res.status(401).json({ error: 'Invalid token' });
+        return;
+      }
+
+      res.locals.userId = await getUserIdFromToken(context, decodedToken.uid);
+      res.locals.userUid = decodedToken.uid;
+      return next();
+    } catch (error) {
+      console.error('Invalid token:', error);
+      res.status(500).json({ error: 'Invalid token' });
+    }
+  };
+
+export const createFirebaseAuthSocket =
+  (context: AppContext) =>
+  async (
+    socket: Socket,
+    next: (err?: ExtendedError) => void
+  ): Promise<void> => {
+    try {
+      const token = socket.handshake.auth?.token;
+
+      if (!token) {
+        return next(
+          new Error('Authentication token is missing') as ExtendedError
+        );
+      }
+
+      const decodedToken = await admin.auth().verifyIdToken(token);
+
+      if (!decodedToken) {
+        return next(new Error('Invalid token') as ExtendedError);
+      }
+
+      socket.data.userId = await getUserIdFromToken(context, decodedToken.uid);
+      socket.data.userUid = decodedToken.uid;
+      next();
+    } catch (error) {
       console.error('Socket authentication failed:', error);
       next(new Error('Authentication failed') as ExtendedError);
-    });
-};
+    }
+  };

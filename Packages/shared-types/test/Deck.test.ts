@@ -1,8 +1,9 @@
 import { createDeck } from '../src/Game/Deck.ts';
+import { Suit } from '../src/Game/Suit.ts';
 import { mockContextDeck } from './mocks/mockContextDeck.ts';
 
 jest.mock('../src/Game/Deck.ts', () => ({
-  createDeck: jest.fn(() => mockContextDeck.createDeck()),
+  createDeck: jest.fn((numDecks = 1) => mockContextDeck.createDeck(numDecks)),
 }));
 
 afterEach(() => {
@@ -17,27 +18,34 @@ describe('Deck Operations', () => {
   let deck;
 
   beforeEach(() => {
-    deck = createDeck();
+    deck = createDeck(2); // Testing with multiple decks
   });
 
   it('should create a full deck with baseDeck and currentDeck populated', () => {
-    expect(deck.baseDeck.length).toBe(52);
-    expect(deck.currentDeck.length).toBe(52);
-    expect(deck.numDecks).toBe(1);
+    const expectedDeckSize = 2 * 52 + 1; // Adding the cut card
+    expect(deck.baseDeck.length).toBe(expectedDeckSize);
+    expect(deck.currentDeck.length).toBe(expectedDeckSize);
+    expect(deck.numDecks).toBe(2);
   });
 
-  it('should have all cards with a suit and value', () => {
+  it('should have all cards with a valid suit and value', () => {
     deck.baseDeck.forEach((card) => {
-      expect(card.suit).toBeDefined();
+      expect(Object.values(Suit)).toContain(card.suit);
       expect(card.value).toBeDefined();
       expect(typeof card.faceUp).toBe('boolean');
     });
   });
 
-  it('should create a deck with valid CardValueType and Suit', () => {
-    deck.baseDeck.forEach((card) => {
-      expect(Object.values(mockContextDeck.createDeck().baseDeck[0].suit)).toContain(card.suit);
-      expect(Object.values(mockContextDeck.createDeck().baseDeck[0].value)).toContain(card.value);
-    });
+  it('should exclude HIDDEN and CUT cards from normal deck composition', () => {
+    const validCards = deck.baseDeck.filter((card) => card.suit !== Suit.Cut && card.suit !== Suit.Hidden);
+    expect(validCards.length).toBe(2 * 52);
+  });
+
+  it('should include exactly one CUT card in the deck', () => {
+    const cutCardCount = deck.baseDeck.filter((card) => card.suit === Suit.Cut).length;
+    expect(cutCardCount).toBe(1);
+
+    const cutCardIndex = deck.baseDeck.findIndex((card) => card.suit === Suit.Cut);
+    expect(cutCardIndex).toBeGreaterThanOrEqual(0);
   });
 });
