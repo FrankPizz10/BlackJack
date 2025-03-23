@@ -42,11 +42,13 @@ const TestGame = () => {
   const [roomState, setRoomState] = useState<{
     room: RoomData | null;
     userRoom: UserRoom | null;
+    userSeats: UserSeat[] | null;
     userSeat: UserSeat | null;
     joinRoom: JoinRoom | null;
   }>({
     room: null,
     userRoom: null,
+    userSeats: null,
     userSeat: null,
     joinRoom: null,
   });
@@ -75,6 +77,7 @@ const TestGame = () => {
     socket.on('roomJoined', (data: RoomWithUsersAndSeats) => {
       const { UserRooms } = data;
       const userRoomDb = UserRooms.find((ur) => ur.name === socket.id);
+      const userSeats = data.UserRooms.flatMap((ur) => ur.UserSeats);
       console.log('User room db: ', userRoomDb);
       if (!userRoomDb) {
         console.error('User room not found in roomJoined event');
@@ -98,6 +101,7 @@ const TestGame = () => {
           name: userRoomDb.name,
           initialStack: userRoomDb.initialStack,
         },
+        userSeats: userSeats,
       }));
       console.log('Room joined: ', data);
     });
@@ -255,9 +259,12 @@ const TestGame = () => {
 
   const takeSeat = async () => {
     if (!roomState.room || !roomState.userRoom) return;
+    const seatPosition = roomState.userSeats
+      ? roomState.userSeats.length + 1
+      : 1;
     const takeSeat: TakeSeat = {
       roomUrl: roomState.room.url,
-      seatPosition: 2,
+      seatPosition: seatPosition,
       userRoomId: roomState.userRoom.id,
     };
     console.log('Taking seat: ', takeSeat);
