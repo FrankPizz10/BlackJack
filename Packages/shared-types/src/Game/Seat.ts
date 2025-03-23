@@ -1,5 +1,4 @@
 import { Hand } from './Hand';
-import { Player } from './Player';
 
 /**
  * Represents a seat in the game.

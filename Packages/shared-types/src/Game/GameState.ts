@@ -6,11 +6,7 @@ import { ActionType } from './ActionType';
 import { Action } from './Action';
 import { Bet } from './Bet';
 import { Player } from './Player';
-import {
-  RoomWithUsersAndSeats,
-  UserRoom,
-  UserRoomWithSeat,
-} from '../db/UserRoom';
+import { RoomWithUsersAndSeats, UserRoomWithSeat } from '../db/UserRoom';
 
 /**
  * Represents the state of the game
@@ -480,7 +476,7 @@ export const takeAction = (gs: GameState, action: Action): ActionResult => {
     return { gs: gamestateAfterAction, actionSuccess: true };
   }
   if (actionIsDone && gamestateAfterAction) {
-    let updatedSeats: Seat[] = [];
+    const updatedSeats: Seat[] = [];
     for (let i = 0; i < gamestateAfterAction.seats.length; i++) {
       if (i === gs.turnIndex) {
         updatedSeats.push({
@@ -710,7 +706,7 @@ export const dealCards = (gs: GameState): GameState => {
   const activeSeatIndexes = getActiveSeatIndexes(currentGs);
 
   // First round: deal one face-up card to each player
-  let newSeats: Seat[] = [];
+  const newSeats: Seat[] = [];
   for (let i = 0; i < gs.seats.length; i++) {
     if (!activeSeatIndexes.includes(i)) {
       newSeats.push(gs.seats[i]);
