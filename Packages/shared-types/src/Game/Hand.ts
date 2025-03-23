@@ -9,6 +9,7 @@ import { Card } from './Card';
  * @property {boolean} isWon - Whether the hand is won
  * @property {boolean} isPush - Whether the hand is a push
  * @property {boolean} isBlackjack - Whether the hand is a blackjack
+ *
  */
 export type Hand = Readonly<{
   cards: ReadonlyArray<Card>;

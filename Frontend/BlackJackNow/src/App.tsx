@@ -12,8 +12,8 @@ import {
   signInAnonymously,
   UserCredential,
 } from 'firebase/auth';
-// import TestGame from './components/TestGame';
-import BlackjackTable from './components/blackjacktable';
+import TestGame from './components/TestGame';
+//import BlackjackTable from './components/blackjacktable';
 // import SocketLoadTest from './components/SocketLoadTest';
 
 const queryClient = new QueryClient();
@@ -49,8 +49,8 @@ function App() {
           {/* <RoomDisplay /> */}
           {/* <SocketLoadTest />
           <SocketMessage /> */}
-          {/* <TestGame /> */}
-          <BlackjackTable />
+          <TestGame />
+          {/* <BlackjackTable /> */}
         </div>
         <p className="read-the-docs">
           Click on the Vite and React logos to learn more

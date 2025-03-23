@@ -9,17 +9,23 @@ import { UserSeat } from '@shared-types/db/UserSeat';
 import { ActionType } from '@shared-types/Game/ActionType';
 import { GameState } from '@shared-types/Game/GameState';
 import { computeHandCount } from '@shared-types/Game/Hand';
+import { Card } from '@shared-types/Game/Card';
 
 const positionHelper = (seat: UserSeat | null) => {
   return seat && seat.position ? seat.position - 1 : 0;
 };
 
-const getCards = (gameState: GameState, position: UserSeat) => {
-  return gameState.seats[positionHelper(position)].hands[0].cards;
+const getCards = (
+  gameState: GameState,
+  position: UserSeat
+): ReadonlyArray<ReadonlyArray<Card>> => {
+  return gameState.seats[positionHelper(position)].hands.map(
+    (hand) => hand.cards
+  );
 };
 
-const getHand = (gameState: GameState, position: UserSeat) => {
-  return gameState.seats[positionHelper(position)].hands[0];
+const getHands = (gameState: GameState, position: UserSeat) => {
+  return gameState.seats[positionHelper(position)].hands;
 };
 
 const getDealerCards = (gameState: GameState) => {
@@ -36,11 +42,13 @@ const TestGame = () => {
   const [roomState, setRoomState] = useState<{
     room: RoomData | null;
     userRoom: UserRoom | null;
+    userSeats: UserSeat[] | null;
     userSeat: UserSeat | null;
     joinRoom: JoinRoom | null;
   }>({
     room: null,
     userRoom: null,
+    userSeats: null,
     userSeat: null,
     joinRoom: null,
   });
@@ -69,6 +77,7 @@ const TestGame = () => {
     socket.on('roomJoined', (data: RoomWithUsersAndSeats) => {
       const { UserRooms } = data;
       const userRoomDb = UserRooms.find((ur) => ur.name === socket.id);
+      const userSeats = data.UserRooms.flatMap((ur) => ur.UserSeats);
       console.log('User room db: ', userRoomDb);
       if (!userRoomDb) {
         console.error('User room not found in roomJoined event');
@@ -92,6 +101,7 @@ const TestGame = () => {
           name: userRoomDb.name,
           initialStack: userRoomDb.initialStack,
         },
+        userSeats: userSeats,
       }));
       console.log('Room joined: ', data);
     });
@@ -192,6 +202,24 @@ const TestGame = () => {
         seatIndex: positionHelper(roomState.userSeat),
         handIndex: 0,
       };
+    } else if (actionType === 'Double Down') {
+      console.log('Action Double Down: ', actionType);
+      action = {
+        roomUrl: roomState.room.url,
+        actionType: actionType,
+        bet: null,
+        seatIndex: positionHelper(roomState.userSeat),
+        handIndex: 0,
+      };
+    } else if (actionType === 'Split') {
+      console.log('Action Split: ', actionType);
+      action = {
+        roomUrl: roomState.room.url,
+        actionType: actionType,
+        bet: null,
+        seatIndex: positionHelper(roomState.userSeat),
+        handIndex: 0,
+      };
     } else if (actionType === 'Stand') {
       console.log('Action Stand: ', actionType);
       action = {
@@ -231,9 +259,12 @@ const TestGame = () => {
 
   const takeSeat = async () => {
     if (!roomState.room || !roomState.userRoom) return;
+    const seatPosition = roomState.userSeats
+      ? roomState.userSeats.length + 1
+      : 1;
     const takeSeat: TakeSeat = {
       roomUrl: roomState.room.url,
-      seatPosition: 2,
+      seatPosition: seatPosition,
       userRoomId: roomState.userRoom.id,
     };
     console.log('Taking seat: ', takeSeat);
@@ -263,31 +294,42 @@ const TestGame = () => {
 
   const renderPlayer = () => {
     if (!gameState.gameData || !roomState.userSeat) return null; // Ensure game data exists
-    const playerHand = getHand(gameState.gameData, roomState.userSeat);
+
+    const playerHands = getHands(gameState.gameData, roomState.userSeat);
     const playerCards = getCards(gameState.gameData, roomState.userSeat);
-    const playerCount = computeHandCount(playerCards);
+    const playerCounts = playerCards.map((cards) => computeHandCount(cards));
 
     return (
-      <div className="CardDisplay">
-        <h2>Player Count: {playerCount}</h2>
-        {playerCount > 21 && <h2>Player Bust</h2>}
-        {playerHand?.isBlackjack && <h2>BlackJack!</h2>}
-        {gameState.gameData.roundOver && (
-          <>
-            {playerHand?.isDone && playerHand?.isWon && <h2>Player Won</h2>}
-            {playerHand?.isDone &&
-              !playerHand?.isWon &&
-              !playerHand?.isPush && <h2>Player Lost</h2>}
-            {playerHand?.isDone && playerHand?.isPush && <h2>Player Push</h2>}
-          </>
-        )}
-        {playerCards.map((card, index) => (
-          <CardDisplay
-            key={`${card.suit}-${card.value}-${index}`}
-            card={card}
-          />
-        ))}
-      </div>
+      <>
+        {playerHands.map((hand, index) => {
+          const playerCount = playerCounts[index];
+
+          return (
+            <div className="CardDisplay" key={`player-hand-${index}`}>
+              <h2>Player Count: {playerCount}</h2>
+              {playerCount > 21 && <h2>Player Bust</h2>}
+              {hand?.isBlackjack && <h2>BlackJack!</h2>}
+
+              {gameState.gameData && gameState.gameData.roundOver && (
+                <>
+                  {hand?.isDone && hand?.isWon && <h2>Player Won</h2>}
+                  {hand?.isDone && !hand?.isWon && !hand?.isPush && (
+                    <h2>Player Lost</h2>
+                  )}
+                  {hand?.isDone && hand?.isPush && <h2>Player Push</h2>}
+                </>
+              )}
+
+              {playerCards[index].map((card, cardIndex) => (
+                <CardDisplay
+                  key={`${card.suit}-${card.value}-${cardIndex}`}
+                  card={card}
+                />
+              ))}
+            </div>
+          );
+        })}
+      </>
     );
   };
 
@@ -346,6 +388,10 @@ const TestGame = () => {
                 <>
                   <button onClick={() => takeAction('Hit')}>Hit</button>
                   <button onClick={() => takeAction('Stand')}>Stand</button>
+                  <button onClick={() => takeAction('Double Down')}>
+                    Double
+                  </button>
+                  <button onClick={() => takeAction('Split')}>Split</button>
                 </>
               ) : roomState.userRoom?.host ? (
                 <button onClick={() => takeAction('Reset')}>Reset</button>
@@ -355,13 +401,15 @@ const TestGame = () => {
 
           {/* Display Player Stack */}
           {roomState.userSeat &&
-            gameState.gameData?.seats?.[positionHelper(roomState.userSeat)]
-              ?.player?.stack !== undefined && (
+            gameState.gameData?.players?.find(
+              (player) => player.userId === roomState.userRoom?.userId
+            )?.stack !== undefined && (
               <h1>
                 Stack:{' '}
                 {
-                  gameState.gameData.seats[positionHelper(roomState.userSeat)]
-                    ?.player?.stack
+                  gameState.gameData.players.find(
+                    (player) => player.userId === roomState.userRoom?.userId
+                  )?.stack
                 }
               </h1>
             )}
