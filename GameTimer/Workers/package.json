@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node src/worker.ts",
+    "start": "node -r tsconfig-paths/register dist/src/worker.js",
     "build": "tsc",
     "build:workers": "npm install && npm run build",
     "build:shared": "cd ../../Packages/shared-types && npm run buildInstall",
@@ -24,6 +24,7 @@
   "dependencies": {
     "bullmq": "^5.40.0",
     "dotenv": "^16.4.7",
+    "tsconfig-paths": "^4.2.0",
     "ioredis": "^5.4.2"
   }
 }
