@@ -39,11 +39,19 @@ new Worker(
       // console.log(`Current gamestate is ${gameStateRaw}`);
 
       // Update turn by standing player
-      const updatedGameState = takeAction(gameState, {
+      const takeActionResult = takeAction(gameState, {
         actionType: 'Stand',
         seatIndex: gameState.turnIndex,
         handIndex: gameState.seats[gameState.turnIndex].handIndex,
       });
+
+      // Check if action was successful
+      if (!takeActionResult.actionSuccess) {
+        console.error('Failed to update turn');
+        return undefined;
+      }
+
+      const updatedGameState = takeActionResult.gs;
 
       // console.log(`Updated gamestate is ${JSON.stringify(updatedGameState)}`);
 
@@ -54,7 +62,7 @@ new Worker(
         `Turn updated for room:${roomUrl} at ${new Date().toLocaleTimeString()}`
       );
 
-      return updatedGameState.gs;
+      return updatedGameState;
     } catch (error) {
       console.error('Error processing turn job:', error);
       return undefined;
