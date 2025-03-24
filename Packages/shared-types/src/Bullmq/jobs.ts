@@ -3,4 +3,5 @@ export interface TestGameState {
   roomId: string;
 }
 
-export const TURN_TIME_LIMIT = 60 * 1000 * 5;
+const MINUTE = 60 * 1000;
+export const TURN_TIME_LIMIT = MINUTE / 2;
