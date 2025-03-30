@@ -1,7 +1,7 @@
 import { QueueEvents, Worker } from 'bullmq';
 import Redis from 'ioredis';
 import dotenv from 'dotenv';
-import { GameState } from '@shared-types/Game/GameState';
+import { GameState, takeAction } from '@shared-types/Game/GameState';
 
 dotenv.config();
 
@@ -36,14 +36,33 @@ new Worker(
         return undefined;
       }
 
+      // console.log(`Current gamestate is ${gameStateRaw}`);
+
+      // Update turn by standing player
+      const takeActionResult = takeAction(gameState, {
+        actionType: 'Stand',
+        seatIndex: gameState.turnIndex,
+        handIndex: gameState.seats[gameState.turnIndex].handIndex,
+      });
+
+      // Check if action was successful
+      if (!takeActionResult.actionSuccess) {
+        console.error('Failed to update turn');
+        return undefined;
+      }
+
+      const updatedGameState = takeActionResult.gs;
+
+      // console.log(`Updated gamestate is ${JSON.stringify(updatedGameState)}`);
+
       // Set game state
-      await redis.set(`gameState:${roomUrl}`, JSON.stringify(gameState));
+      await redis.set(`gameState:${roomUrl}`, JSON.stringify(updatedGameState));
 
       console.log(
         `Turn updated for room:${roomUrl} at ${new Date().toLocaleTimeString()}`
       );
 
-      return gameState;
+      return updatedGameState;
     } catch (error) {
       console.error('Error processing turn job:', error);
       return undefined;
@@ -56,11 +75,7 @@ new Worker(
 const queueEvents = new QueueEvents('turnQueue', { connection: redis });
 
 queueEvents.on('completed', async ({ jobId, returnvalue }) => {
-  console.log(
-    `Job ${jobId} completed. With return value: ${JSON.stringify(
-      returnvalue
-    )}. Publishing update...`
-  );
+  console.log(`Job ${jobId} completed. Publishing update...`);
 
   if (!returnvalue) {
     console.error(`Failed to process return value for job ${jobId}`);

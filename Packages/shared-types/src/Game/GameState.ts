@@ -575,7 +575,6 @@ const payoutHands = (gs: GameState): GameState => {
     );
 
     if (!player) {
-      console.error('Player not found');
       return { seat, player: null };
     }
 
