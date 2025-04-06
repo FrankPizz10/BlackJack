@@ -5,35 +5,45 @@ interface BettingCircleProps {
   mainBet: number;
   sideBets: { [key: string]: number };
   isActive: boolean;
-  onSideBetClick: (section: string) => void;
+  onSectionClick: (section: string) => void;
+  selectedSection?: string | null;
 }
 
 const BettingCircle: React.FC<BettingCircleProps> = ({
   mainBet,
   sideBets,
   isActive,
-  onSideBetClick,
+  onSectionClick,
+  selectedSection,
 }) => {
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
 
-  // Calculate the circumference for the highlight animation
-  const radius = 50;
-  const circumference = 2 * Math.PI * radius;
+  // Increase the radius of the outer circle to create more space for sidebets
+  const outerRadius = 55; // Increased from 50
+  const circumference = 2 * Math.PI * outerRadius;
 
-  // SVG paths for the four sections
+  // SVG paths for the four sections - using the larger radius now
   const sections = {
-    top: 'M 60 60 L 60 10 A 50 50 0 0 1 110 60 Z',
-    right: 'M 60 60 L 110 60 A 50 50 0 0 1 60 110 Z',
-    bottom: 'M 60 60 L 60 110 A 50 50 0 0 1 10 60 Z',
-    left: 'M 60 60 L 10 60 A 50 50 0 0 1 60 10 Z',
+    top: `M 60 60 L 60 ${60 - outerRadius} A ${outerRadius} ${outerRadius} 0 0 1 ${60 + outerRadius} 60 Z`,
+    right: `M 60 60 L ${60 + outerRadius} 60 A ${outerRadius} ${outerRadius} 0 0 1 60 ${60 + outerRadius} Z`,
+    bottom: `M 60 60 L 60 ${60 + outerRadius} A ${outerRadius} ${outerRadius} 0 0 1 ${60 - outerRadius} 60 Z`,
+    left: `M 60 60 L ${60 - outerRadius} 60 A ${outerRadius} ${outerRadius} 0 0 1 60 ${60 - outerRadius} Z`,
   };
 
-  // Positions for side bet amounts
+  // Update positions for side bet amounts - moved further away from center
   const betPositions = {
-    top: { x: 60, y: 35 },
-    right: { x: 85, y: 65 },
-    bottom: { x: 60, y: 95 },
-    left: { x: 35, y: 65 },
+    top: { x: 60, y: 30 },    // Moved up more
+    right: { x: 90, y: 60 },  // Moved right more
+    bottom: { x: 60, y: 90 }, // Moved down more
+    left: { x: 30, y: 60 },   // Moved left more
+  };
+
+  // Function to get highlight color based on selected and hovered section
+  const getHighlightColor = (section: string) => {
+    if (selectedSection === section) {
+      return "#4ade80"; // Green highlight for selected section
+    }
+    return hoveredSection === section ? '#334155' : '#1e293b';
   };
 
   return (
@@ -49,7 +59,7 @@ const BettingCircle: React.FC<BettingCircleProps> = ({
           <motion.circle
             cx="60"
             cy="60"
-            r={radius}
+            r={outerRadius}
             fill="none"
             stroke="#4ade80"
             strokeWidth="2"
@@ -67,7 +77,7 @@ const BettingCircle: React.FC<BettingCircleProps> = ({
             key={section}
             d={path}
             style={{
-              fill: hoveredSection === section ? '#334155' : '#1e293b',
+              fill: getHighlightColor(section),
               stroke: '#475569',
               cursor: 'pointer',
               transition: 'fill 0.2s',
@@ -75,26 +85,40 @@ const BettingCircle: React.FC<BettingCircleProps> = ({
             strokeWidth="2"
             onMouseEnter={() => setHoveredSection(section)}
             onMouseLeave={() => setHoveredSection(null)}
-            onClick={() => onSideBetClick(section)}
+            onClick={() => onSectionClick(section)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           />
         ))}
 
-        {/* Inner circle base (larger) */}
+        {/* Inner circle base (middle layer) */}
         <circle
           cx="60"
           cy="60"
-          r="35"
-          style={{ fill: '#334155', stroke: '#475569', strokeWidth: 2 }}
+          r="30" // Reduced slightly from 35
+          style={{ 
+            fill: getHighlightColor("center"),
+            stroke: '#475569', 
+            strokeWidth: 2,
+            cursor: 'pointer'
+          }}
+          onClick={() => onSectionClick("center")}
+          onMouseEnter={() => setHoveredSection("center")}
+          onMouseLeave={() => setHoveredSection(null)}
         />
 
-        {/* Inner circle overlay (smaller) */}
+        {/* Inner circle overlay (smallest) */}
         <circle
           cx="60"
           cy="60"
-          r="25"
-          style={{ fill: '#1e293b', stroke: '#475569', strokeWidth: 2 }}
+          r="22" // Reduced slightly from 25
+          style={{ 
+            fill: '#1e293b', 
+            stroke: '#475569', 
+            strokeWidth: 2,
+            cursor: 'pointer'
+          }}
+          onClick={() => onSectionClick("center")}
         />
 
         {/* Main bet amount */}
@@ -102,26 +126,34 @@ const BettingCircle: React.FC<BettingCircleProps> = ({
           x="60"
           y="65"
           textAnchor="middle"
-          style={{ fill: 'white', fontSize: '1.125rem', fontWeight: 'bold' }}
+          style={{ fill: 'white', fontSize: '1.125rem', fontWeight: 'bold', pointerEvents: 'none' }}
         >
           ${mainBet}
         </text>
 
-        {/* Side bet amounts */}
+        {/* Side bet amounts - now with background for better visibility */}
         {Object.entries(betPositions).map(([section, pos]) =>
           sideBets[section] ? (
-            <motion.text
-              key={section}
-              x={pos.x}
-              y={pos.y}
-              textAnchor="middle"
-              style={{ fill: 'white', fontSize: '0.875rem' }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              ${sideBets[section]}
-            </motion.text>
+            <g key={section} style={{ pointerEvents: 'none' }}>
+              {/* Small circle background for better visibility */}
+              <circle
+                cx={pos.x}
+                cy={pos.y}
+                r="11"
+                style={{ fill: '#334155', stroke: '#475569', strokeWidth: 1 }}
+              />
+              <motion.text
+                x={pos.x}
+                y={pos.y + 3} // Adjusted for vertical centering
+                textAnchor="middle"
+                style={{ fill: 'white', fontSize: '0.875rem' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                ${sideBets[section]}
+              </motion.text>
+            </g>
           ) : null
         )}
       </motion.svg>
@@ -204,6 +236,8 @@ interface PlayerPositionProps {
   count?: number;
   isActive?: boolean;
   onSideBetClick?: (section: string) => void;
+  onSectionClick?: (section: string) => void;
+  selectedSection?: string | null;
 }
 
 const PlayerPosition: React.FC<PlayerPositionProps> = ({
@@ -213,9 +247,19 @@ const PlayerPosition: React.FC<PlayerPositionProps> = ({
   cards = [],
   count = 0,
   isActive = false,
-  onSideBetClick = (section: string) =>
-    console.log(`Side bet clicked: ${section}`),
+  onSideBetClick = () => {}, // Keep for backward compatibility
+  onSectionClick, // New prop for section selection
+  selectedSection = null,
 }) => {
+  // Use the new onSectionClick if provided, otherwise fall back to onSideBetClick
+  const handleSectionClick = (section: string) => {
+    if (onSectionClick) {
+      onSectionClick(section);
+    } else {
+      onSideBetClick(section);
+    }
+  };
+
   return (
     <motion.div
       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
@@ -229,7 +273,8 @@ const PlayerPosition: React.FC<PlayerPositionProps> = ({
         mainBet={mainBet}
         sideBets={sideBets}
         isActive={isActive}
-        onSideBetClick={onSideBetClick}
+        onSectionClick={handleSectionClick}
+        selectedSection={selectedSection}
       />
 
       <motion.div
@@ -256,4 +301,3 @@ const PlayerPosition: React.FC<PlayerPositionProps> = ({
 };
 
 export default PlayerPosition;
-

@@ -12,6 +12,7 @@ interface Player {
   count: number;
   isActive: boolean;
   stack: number;
+  selectedSection: string | null; // Track which section is currently selected for betting
 }
 
 const BlackjackTable = () => {
@@ -26,6 +27,7 @@ const BlackjackTable = () => {
       count: 0,
       isActive: false,
       stack: 0,
+      selectedSection: null,
     },
     {
       id: 2,
@@ -36,6 +38,7 @@ const BlackjackTable = () => {
       count: 0,
       isActive: false,
       stack: 0,
+      selectedSection: null,
     },
     {
       id: 3,
@@ -46,6 +49,7 @@ const BlackjackTable = () => {
       count: 0,
       isActive: false,
       stack: 0,
+      selectedSection: null,
     },
     {
       id: 4,
@@ -56,6 +60,7 @@ const BlackjackTable = () => {
       count: 0,
       isActive: false,
       stack: 0,
+      selectedSection: null,
     },
     {
       id: 5,
@@ -66,10 +71,12 @@ const BlackjackTable = () => {
       count: 0,
       isActive: false,
       stack: 0,
+      selectedSection: null,
     },
   ]);
 
   const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
+  const [gamePhase, setGamePhase] = useState<'betting' | 'action'>('betting');
 
   // State for intro card visibility
   const [showIntroCard, setShowIntroCard] = useState(true);
@@ -77,8 +84,19 @@ const BlackjackTable = () => {
   // State for the join table modal - just track which seat is being joined
   const [seatToJoin, setSeatToJoin] = useState<number | null>(null);
 
-  const handleSideBetClick = (playerId: number, section: string) => {
-    console.log(`Player ${playerId} placed side bet on ${section}`);
+  // Handler for section selection (center or sides)
+  const handleSectionClick = (playerId: number, section: string) => {
+    // Only allow section selection during betting phase
+    if (gamePhase !== 'betting' || selectedPlayer !== playerId) return;
+
+    console.log(`Player ${playerId} selected section: ${section}`);
+    
+    // Update the player's selected section
+    setPlayers(players.map(player => 
+      player.id === playerId
+        ? { ...player, selectedSection: section }
+        : player
+    ));
   };
 
   const handleOptionClick = (optionId: string) => {
@@ -120,6 +138,7 @@ const BlackjackTable = () => {
               username: username.trim(),
               stack: stackSize,
               isActive: true, // Make newly joined player active
+              selectedSection: null,
             }
           : player
       )
@@ -130,13 +149,60 @@ const BlackjackTable = () => {
   };
 
   const handleBetSubmit = (amount: number) => {
-    console.log(`Player ${selectedPlayer} placed bet of $${amount}`);
-    // BetSubmit is handled by BlackjackControls
+    if (!selectedPlayer) return;
+
+    const player = players.find(p => p.id === selectedPlayer);
+    if (!player || !player.selectedSection) {
+      console.log("Please select a section to place your bet");
+      return;
+    }
+
+    // Check if player has enough in their stack
+    if (player.stack < amount) {
+      console.log("Not enough chips to place this bet");
+      return;
+    }
+
+    console.log(`Player ${selectedPlayer} placed bet of $${amount} on ${player.selectedSection}`);
+    
+    // Update the player's bets based on the selected section
+    setPlayers(players.map(p => {
+      if (p.id === selectedPlayer) {
+        const updatedStack = p.stack - amount;
+        
+        if (p.selectedSection === 'center') {
+          // Update main bet
+          return {
+            ...p,
+            mainBet: p.mainBet + amount,
+            stack: updatedStack,
+          };
+        } else {
+          // Update side bet for the selected section
+          return {
+            ...p,
+            sideBets: {
+              ...p.sideBets,
+              [p.selectedSection as string]: (p.sideBets[p.selectedSection as string] || 0) + amount,
+            },
+            stack: updatedStack,
+          };
+        }
+      }
+      return p;
+    }));
   };
 
   const handleAction = (actionType: string) => {
     console.log(`Player ${selectedPlayer} chose action: ${actionType}`);
-    // Actions are handled by BlackjackControls
+
+    // If this is a betting action, we stay in betting phase
+    // If it's a game action (hit, stand, etc.), we move to action phase
+    if (actionType === 'bet') {
+      setGamePhase('betting');
+    } else {
+      setGamePhase('action');
+    }
 
     // After certain actions, we may want to reset the selected player
     if (actionType === 'stand' || actionType === 'surrender') {
@@ -144,6 +210,11 @@ const BlackjackTable = () => {
         setSelectedPlayer(null);
       }, 1000);
     }
+  };
+
+  // Function to determine if a player's turn is active
+  const isPlayerActive = (playerId: number) => {
+    return selectedPlayer === playerId;
   };
 
   // Calculate player positions along a semicircle for 5 players
@@ -235,9 +306,13 @@ const BlackjackTable = () => {
         >
           Welcome to Blackjack
         </h2>
-        <p style={{ marginBottom: '1.5rem' }}>
+        <p style={{ marginBottom: '1rem' }}>
           Click on an empty seat to join the table. Each player starts with
           their own stack. Play responsibly and good luck!
+        </p>
+        <p style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+          <strong>Tip:</strong> To place a bet, select your position, click on a section of the 
+          betting circle (center or sides), then choose your bet amount.
         </p>
         <button
           onClick={onClose}
@@ -452,6 +527,36 @@ const BlackjackTable = () => {
     );
   };
 
+  // Instructions for the selected section (if any)
+  const SectionInstructions = () => {
+    if (!selectedPlayer) return null;
+    
+    const player = players.find(p => p.id === selectedPlayer);
+    if (!player || !player.selectedSection) return null;
+    
+    const sectionName = player.selectedSection === "center" 
+      ? "Main Bet" 
+      : `${player.selectedSection.charAt(0).toUpperCase() + player.selectedSection.slice(1)} Side Bet`;
+    
+    return (
+      <div style={{
+        position: "absolute",
+        bottom: "22%",
+        left: "50%",
+        transform: "translateX(-50%)",
+        backgroundColor: "#1e293b",
+        color: "white",
+        padding: "0.5rem 1rem",
+        borderRadius: "0.5rem",
+        fontSize: "0.875rem",
+        textAlign: "center",
+        zIndex: 15,
+      }}>
+        <span>Placing bet on: <strong>{sectionName}</strong></span>
+      </div>
+    );
+  };
+
   return (
     <div>
       {/* Player positions */}
@@ -479,10 +584,9 @@ const BlackjackTable = () => {
               sideBets={player.sideBets}
               cards={player.cards}
               count={player.count}
-              isActive={player.isActive}
-              onSideBetClick={(section) =>
-                handleSideBetClick(player.id, section)
-              }
+              isActive={isPlayerActive(player.id)}
+              onSectionClick={(section) => handleSectionClick(player.id, section)}
+              selectedSection={player.id === selectedPlayer ? player.selectedSection : null}
             />
           ) : (
             <div
@@ -514,6 +618,9 @@ const BlackjackTable = () => {
         />
       </div>
 
+      {/* Section selection indicator */}
+      <SectionInstructions />
+
       {/* BlackjackControls - appears when a player is selected */}
       {selectedPlayer && (
         <div
@@ -532,10 +639,10 @@ const BlackjackTable = () => {
             }
             onBetSubmit={handleBetSubmit}
             onAction={handleAction}
-            gamePhase="betting" // Start in betting phase
-            canDouble={true}
-            canSplit={false}
-            canSurrender={true}
+            gamePhase={gamePhase} // Use the current game phase
+            canDouble={gamePhase === 'action' && players.find(p => p.id === selectedPlayer)?.cards.length === 2}
+            canSplit={gamePhase === 'action' && players.find(p => p.id === selectedPlayer)?.cards.length === 2}
+            canSurrender={gamePhase === 'action' && players.find(p => p.id === selectedPlayer)?.cards.length === 2}
           />
         </div>
       )}
@@ -556,4 +663,3 @@ const BlackjackTable = () => {
 };
 
 export default BlackjackTable;
-
