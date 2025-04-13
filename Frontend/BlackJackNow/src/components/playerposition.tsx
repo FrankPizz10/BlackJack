@@ -1,129 +1,158 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+
 
 interface BettingCircleProps {
   mainBet: number;
   sideBets: { [key: string]: number };
   isActive: boolean;
-  onSideBetClick: (section: string) => void;
+  onSectionClick: (section: string) => void;
+  selectedSection?: string | null;
 }
 
 const BettingCircle: React.FC<BettingCircleProps> = ({
   mainBet,
   sideBets,
   isActive,
-  onSideBetClick,
+  onSectionClick,
+  selectedSection,
 }) => {
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
 
-  // Calculate the circumference for the highlight animation
-  const radius = 50;
-  const circumference = 2 * Math.PI * radius;
+  const mainRadius = 30;
+  const sideBetRadius = 15;
+  const centerX = 75;
+  const centerY = 75;
+  const distanceFromCenter = 55;
 
-  // SVG paths for the four sections
-  const sections = {
-    top: 'M 60 60 L 60 10 A 50 50 0 0 1 110 60 Z',
-    right: 'M 60 60 L 110 60 A 50 50 0 0 1 60 110 Z',
-    bottom: 'M 60 60 L 60 110 A 50 50 0 0 1 10 60 Z',
-    left: 'M 60 60 L 10 60 A 50 50 0 0 1 60 10 Z',
+  const sideBetPositions = {
+    top: { x: centerX, y: centerY - distanceFromCenter },
+    right: { x: centerX + distanceFromCenter, y: centerY },
+    bottom: { x: centerX, y: centerY + distanceFromCenter },
+    left: { x: centerX - distanceFromCenter, y: centerY },
   };
 
-  // Positions for side bet amounts
-  const betPositions = {
-    top: { x: 60, y: 35 },
-    right: { x: 85, y: 65 },
-    bottom: { x: 60, y: 95 },
-    left: { x: 35, y: 65 },
+  const hasBet = (section: string) => {
+    if (section === 'center') return mainBet > 0;
+    return sideBets[section] > 0;
+  };
+
+  const isSectionClickable = (section: string) => {
+    return !hasBet(section);
+  };
+
+  const getHighlightColor = (section: string) => {
+    if (hasBet(section)) {
+      return "#4ade80"; // Green for sections with bets
+    }
+    if (section === selectedSection) {
+      return "#4ade80"; // Green for selected section
+    }
+    return hoveredSection === section ? '#334155' : '#1e293b';
+  };
+
+  const formatBetAmount = (amount: number) => {
+    if (amount === 0) return '$0';
+    if (amount >= 1000000) {
+      return `$${(amount / 1000000).toFixed(1)}M`;
+    }
+    if (amount >= 1000) {
+      return `$${(amount / 1000).toFixed(1)}K`;
+    }
+    return `$${amount}`;
+  };
+
+  const handleClick = (section: string) => {
+    if (isSectionClickable(section)) {
+      onSectionClick(section);
+    }
   };
 
   return (
     <div style={{ position: 'relative', width: '12rem', height: '12rem' }}>
       <motion.svg
-        viewBox="0 0 120 120"
+        viewBox="0 0 150 150"
         style={{ width: '100%', height: '100%' }}
-        initial="initial"
-        animate="animate"
       >
-        {/* Highlight ring for active player */}
         {isActive && (
           <motion.circle
-            cx="60"
-            cy="60"
-            r={radius}
+            cx={centerX}
+            cy={centerY}
+            r={mainRadius + 2}
             fill="none"
             stroke="#4ade80"
             strokeWidth="2"
-            strokeDasharray={circumference}
-            initial={{ strokeDashoffset: circumference }}
+            strokeDasharray={2 * Math.PI * (mainRadius + 2)}
+            initial={{ strokeDashoffset: 2 * Math.PI * (mainRadius + 2) }}
             animate={{ strokeDashoffset: 0 }}
             transition={{ duration: 1, repeat: Infinity }}
             style={{ opacity: 0.5 }}
           />
         )}
 
-        {/* Outer betting circle sections */}
-        {Object.entries(sections).map(([section, path]) => (
-          <motion.path
-            key={section}
-            d={path}
-            style={{
-              fill: hoveredSection === section ? '#334155' : '#1e293b',
-              stroke: '#475569',
-              cursor: 'pointer',
-              transition: 'fill 0.2s',
-            }}
-            strokeWidth="2"
-            onMouseEnter={() => setHoveredSection(section)}
-            onMouseLeave={() => setHoveredSection(null)}
-            onClick={() => onSideBetClick(section)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          />
-        ))}
-
-        {/* Inner circle base (larger) */}
-        <circle
-          cx="60"
-          cy="60"
-          r="35"
-          style={{ fill: '#334155', stroke: '#475569', strokeWidth: 2 }}
+        {/* Main betting circle */}
+        <motion.circle
+          cx={centerX}
+          cy={centerY}
+          r={mainRadius}
+          fill={getHighlightColor("center")}
+          stroke="#475569"
+          strokeWidth="2"
+          style={{ cursor: isSectionClickable("center") ? 'pointer' : 'not-allowed' }}
+          onMouseEnter={() => isSectionClickable("center") && setHoveredSection("center")}
+          onMouseLeave={() => setHoveredSection(null)}
+          onClick={() => handleClick("center")}
+          whileHover={isSectionClickable("center") ? { scale: 1.05 } : {}}
+          whileTap={isSectionClickable("center") ? { scale: 0.95 } : {}}
         />
 
-        {/* Inner circle overlay (smaller) */}
-        <circle
-          cx="60"
-          cy="60"
-          r="25"
-          style={{ fill: '#1e293b', stroke: '#475569', strokeWidth: 2 }}
-        />
+      <text
+        key={`mainBet-${mainBet}`} // Add key to force re-render
+        x={centerX}
+        y={centerY + 5}
+        textAnchor="middle"
+        style={{ 
+          fill: 'white', 
+          fontSize: mainBet >= 1000 ? '0.875rem' : '1rem', 
+          fontWeight: 'bold',
+          pointerEvents: 'none'
+        }}
+      >
+        {formatBetAmount(mainBet)}
+      </text>
 
-        {/* Main bet amount */}
-        <text
-          x="60"
-          y="65"
-          textAnchor="middle"
-          style={{ fill: 'white', fontSize: '1.125rem', fontWeight: 'bold' }}
-        >
-          ${mainBet}
-        </text>
-
-        {/* Side bet amounts */}
-        {Object.entries(betPositions).map(([section, pos]) =>
-          sideBets[section] ? (
-            <motion.text
-              key={section}
+        {/* Side bet circles */}
+        {Object.entries(sideBetPositions).map(([section, pos]) => (
+          <g key={section}>
+            <motion.circle
+              cx={pos.x}
+              cy={pos.y}
+              r={sideBetRadius}
+              fill={getHighlightColor(section)}
+              stroke="#475569"
+              strokeWidth="2"
+              style={{ cursor: isSectionClickable(section) ? 'pointer' : 'not-allowed' }}
+              onMouseEnter={() => isSectionClickable(section) && setHoveredSection(section)}
+              onMouseLeave={() => setHoveredSection(null)}
+              onClick={() => handleClick(section)}
+              whileHover={isSectionClickable(section) ? { scale: 1.05 } : {}}
+              whileTap={isSectionClickable(section) ? { scale: 0.95 } : {}}
+            />
+            <text
+              key={`sideBet-${section}-${sideBets[section] || 0}`} // Add key to force re-render
               x={pos.x}
-              y={pos.y}
+              y={pos.y + 4}
               textAnchor="middle"
-              style={{ fill: 'white', fontSize: '0.875rem' }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              style={{ 
+                fill: 'white', 
+                fontSize: '0.875rem',
+                pointerEvents: 'none'
+              }}
             >
-              ${sideBets[section]}
-            </motion.text>
-          ) : null
-        )}
+              {formatBetAmount(sideBets[section] || 0)}
+            </text>
+          </g>
+        ))}
       </motion.svg>
     </div>
   );
@@ -203,7 +232,9 @@ interface PlayerPositionProps {
   cards?: Card[];
   count?: number;
   isActive?: boolean;
-  onSideBetClick?: (section: string) => void;
+  onSectionClick?: (section: string) => void;
+  selectedSection?: string | null;
+  onBetPlaced?: (section: string, amount: number) => void;  // New prop for handling bet placement
 }
 
 const PlayerPosition: React.FC<PlayerPositionProps> = ({
@@ -213,9 +244,15 @@ const PlayerPosition: React.FC<PlayerPositionProps> = ({
   cards = [],
   count = 0,
   isActive = false,
-  onSideBetClick = (section: string) =>
-    console.log(`Side bet clicked: ${section}`),
+  onSectionClick,
+  selectedSection = null,
 }) => {
+  const handleSectionClick = (section: string) => {
+    if (onSectionClick) {
+      onSectionClick(section);
+    }
+  };
+
   return (
     <motion.div
       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
@@ -229,7 +266,8 @@ const PlayerPosition: React.FC<PlayerPositionProps> = ({
         mainBet={mainBet}
         sideBets={sideBets}
         isActive={isActive}
-        onSideBetClick={onSideBetClick}
+        onSectionClick={handleSectionClick}
+        selectedSection={selectedSection}
       />
 
       <motion.div
@@ -256,4 +294,3 @@ const PlayerPosition: React.FC<PlayerPositionProps> = ({
 };
 
 export default PlayerPosition;
-

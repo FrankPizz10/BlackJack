@@ -12,19 +12,23 @@ const BettingCard: React.FC<BettingCardProps> = ({
 }) => {
   const [betAmount, setBetAmount] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
+  const [inputValue, setInputValue] = useState('');
 
   const presetMultipliers = [0.5, 2, 5, 10];
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     setSliderValue(value);
-    setBetAmount(Math.round(value * playerStack * 100) / 100);
+    const newBetAmount = Math.round(value * playerStack * 100) / 100;
+    setBetAmount(newBetAmount);
+    setInputValue(newBetAmount.toString());
   };
 
   const handleMultiplierClick = (multiplier: number | 'max') => {
     if (multiplier === 'max') {
       setSliderValue(1);
       setBetAmount(playerStack);
+      setInputValue(playerStack.toString());
       return;
     }
 
@@ -32,27 +36,31 @@ const BettingCard: React.FC<BettingCardProps> = ({
     const clampedAmount = Math.min(newAmount, playerStack);
     setBetAmount(clampedAmount);
     setSliderValue(clampedAmount / playerStack);
+    setInputValue(clampedAmount.toString());
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^0-9.]/g, '');
-    const numericValue = parseFloat(value);
-
-    if (isNaN(numericValue)) {
+    const value = e.target.value;
+    setInputValue(value);
+    const cleanedValue = value.replace(/[^0-9.]/g, '');
+    if (cleanedValue === '' || cleanedValue === '.') {
       setBetAmount(0);
       setSliderValue(0);
-      return;
+    } else {
+      const numericValue = parseFloat(cleanedValue);
+      if (!isNaN(numericValue)) {
+        const clampedValue = Math.min(Math.max(numericValue, 0), playerStack);
+        setBetAmount(clampedValue);
+        setSliderValue(clampedValue / playerStack);
+      } else {
+        setBetAmount(0);
+        setSliderValue(0);
+      }
     }
-
-    const clampedValue = Math.min(Math.max(numericValue, 0), playerStack);
-    setBetAmount(clampedValue);
-    setSliderValue(clampedValue / playerStack);
   };
 
-  // Disable betting if player has no stack
   const isBettingDisabled = playerStack <= 0;
 
-  // Common button styles
   const buttonBaseStyle = {
     backgroundColor: '#334155',
     color: 'white',
@@ -107,7 +115,8 @@ const BettingCard: React.FC<BettingCardProps> = ({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '1.5rem',
+          gap: '4rem',
+          justifyContent: 'center',
         }}
       >
         <div
@@ -116,28 +125,32 @@ const BettingCard: React.FC<BettingCardProps> = ({
             position: 'relative',
           }}
         >
-          <input
-            type="text"
-            value={`$${betAmount.toFixed(2)}`}
-            onChange={handleInputChange}
-            disabled={isBettingDisabled}
-            style={{
-              width: '100%',
-              backgroundColor: '#1e293b',
-              color: 'white',
-              fontSize: '1.25rem',
-              fontWeight: 700,
-              paddingTop: '0.5rem',
-              paddingBottom: '0.5rem',
-              paddingLeft: '1rem',
-              paddingRight: '1rem',
-              borderRadius: '0.5rem',
-              textAlign: 'center',
-              ...(isBettingDisabled
-                ? { opacity: 0.5, cursor: 'not-allowed' }
-                : {}),
-            }}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input
+              type="text"
+              value={inputValue}
+              onChange={handleInputChange}
+              placeholder="Enter amount"
+              disabled={isBettingDisabled}
+              style={{
+                width: '7rem',
+                backgroundColor: '#1e293b',
+                color: 'white',
+                fontSize: '1.25rem',
+                fontWeight: 700,
+                paddingTop: '0.5rem',
+                paddingBottom: '0.5rem',
+                paddingLeft: '1rem',
+                paddingRight: '1rem',
+                borderRadius: '0.5rem',
+                textAlign: 'center',
+                ...(isBettingDisabled ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
+              }}
+            />
+            <span style={{ color: 'white', fontSize: '1.25rem', fontWeight: 700 }}>
+              {betAmount > 0 ? `$${betAmount.toFixed(2)}` : '$0.00'}
+            </span>
+          </div>
           <div
             style={{
               color: '#94a3b8',
