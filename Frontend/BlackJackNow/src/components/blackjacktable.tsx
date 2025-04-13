@@ -73,6 +73,28 @@ const BlackjackTable = () => {
       stack: 0,
       selectedSection: null,
     },
+    {
+      id: 6,
+      username: null,
+      mainBet: 0,
+      sideBets: {},
+      cards: [],
+      count: 0,
+      isActive: false,
+      stack: 0,
+      selectedSection: null,
+    },
+    {
+      id: 7,
+      username: null,
+      mainBet: 0,
+      sideBets: {},
+      cards: [],
+      count: 0,
+      isActive: false,
+      stack: 0,
+      selectedSection: null,
+    }
   ]);
 
   const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
@@ -84,18 +106,27 @@ const BlackjackTable = () => {
   // State for the join table modal - just track which seat is being joined
   const [seatToJoin, setSeatToJoin] = useState<number | null>(null);
 
-  // Handler for section selection (center or sides)
   const handleSectionClick = (playerId: number, section: string) => {
-    // Only allow section selection during betting phase
-    if (gamePhase !== 'betting' || selectedPlayer !== playerId) return;
-
-    console.log(`Player ${playerId} selected section: ${section}`);
-    
-    // Update the player's selected section
-    setPlayers(players.map(player => 
-      player.id === playerId
-        ? { ...player, selectedSection: section }
-        : player
+    if (gamePhase !== 'betting') return;
+  
+    // Select the player if not already selected
+    if (selectedPlayer !== playerId) {
+      setSelectedPlayer(playerId);
+    }
+  
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
+  
+    // Check for existing bets
+    const hasExistingBet = section === 'center'
+      ? player.mainBet > 0
+      : !!player.sideBets[section];
+  
+    if (hasExistingBet) return;
+  
+    // Set the selected section for the player
+    setPlayers(prev => prev.map(p =>
+      p.id === playerId ? { ...p, selectedSection: section } : p
     ));
   };
 
@@ -150,48 +181,36 @@ const BlackjackTable = () => {
 
   const handleBetSubmit = (amount: number) => {
     if (!selectedPlayer) return;
+  
+    const playerIndex = players.findIndex(p => p.id === selectedPlayer);
+    if (playerIndex === -1) return;
+  
+    const player = players[playerIndex];
+    if (!player.selectedSection) return;
+  
+    if (player.stack < amount) return;
 
-    const player = players.find(p => p.id === selectedPlayer);
-    if (!player || !player.selectedSection) {
-      console.log("Please select a section to place your bet");
-      return;
-    }
-
-    // Check if player has enough in their stack
-    if (player.stack < amount) {
-      console.log("Not enough chips to place this bet");
-      return;
-    }
-
-    console.log(`Player ${selectedPlayer} placed bet of $${amount} on ${player.selectedSection}`);
+    const newPlayers = [...players];
+    const updatedPlayer = { ...player };
+    const currentSection = player.selectedSection;
     
-    // Update the player's bets based on the selected section
-    setPlayers(players.map(p => {
-      if (p.id === selectedPlayer) {
-        const updatedStack = p.stack - amount;
-        
-        if (p.selectedSection === 'center') {
-          // Update main bet
-          return {
-            ...p,
-            mainBet: p.mainBet + amount,
-            stack: updatedStack,
-          };
-        } else {
-          // Update side bet for the selected section
-          return {
-            ...p,
-            sideBets: {
-              ...p.sideBets,
-              [p.selectedSection as string]: (p.sideBets[p.selectedSection as string] || 0) + amount,
-            },
-            stack: updatedStack,
-          };
-        }
-      }
-      return p;
-    }));
-  };
+    updatedPlayer.stack -= amount;
+  
+    if (currentSection === 'center') {
+      updatedPlayer.mainBet += amount;
+    } else {
+      updatedPlayer.sideBets = {
+        ...updatedPlayer.sideBets,
+        [currentSection]: (updatedPlayer.sideBets[currentSection] || 0) + amount
+      };
+    }
+  
+    updatedPlayer.selectedSection = null;
+    newPlayers[playerIndex] = updatedPlayer;
+
+    setPlayers(newPlayers);
+    setSelectedPlayer(null);
+};
 
   const handleAction = (actionType: string) => {
     console.log(`Player ${selectedPlayer} chose action: ${actionType}`);
@@ -222,50 +241,50 @@ const BlackjackTable = () => {
     // Center of the semicircle (horizontally centered, moved higher up the page)
     const centerX = 49;
     const centerY = 20; // Move higher up the page
-
+  
     // Reduced radius for tighter spacing
     const radius = 35;
-
+  
     // Array to hold calculated positions
     const positions = [];
-
-    // Calculate 5 evenly spaced positions along the semicircle
-    // Using a smaller angle range (PI * 0.7 instead of PI) for tighter spacing
-    for (let i = 0; i < 5; i++) {
+  
+    // Calculate 7 evenly spaced positions along the semicircle
+    for (let i = 0; i < 7; i++) {
       // Base angle in radians (from 0.15π to 0.85π for a tighter arc)
-      // This creates a tighter arc covering ~70% of the semicircle
-      const angle = Math.PI * 0.15 + (Math.PI * 0.7 * i) / 4;
-
+      const angle = Math.PI * 0.15 + (Math.PI * 0.7 * i) / 6;
+  
       // Calculate x and y coordinates
       let x = centerX + radius * Math.cos(angle);
       let y = centerY + radius * Math.sin(angle);
-
-      // Special adjustments for Player 1 and Player 5 (positions 0 and 4)
+  
+      // Special adjustments for the first and last players (positions 0 and 6)
       if (i === 0) {
-        // Player 5 (left side)
         x += 1; // Adjust slightly right
         y -= 2; // Move up
-      } else if (i === 4) {
-        // Player 1 (right side)
+      } else if (i === 6) {
         x -= 1; // Adjust slightly left
         y -= 2; // Move up
       }
-
-      // Calculate scale factor - overall 20% smaller, with the same relative scaling
-      const scaleFactor =
-        i === 0 || i === 4
-          ? 0.72 // 0.9 * 0.8 = 0.72
-          : i === 1 || i === 3
-          ? 0.76 // 0.95 * 0.8 = 0.76
-          : 0.8; // Center position: 1.0 * 0.8 = 0.8
-
+  
+      // Calculate scale factor
+      let scaleFactor;
+      if (i === 0 || i === 6) {
+        scaleFactor = 0.72;
+      } else if (i === 1 || i === 5) {
+        scaleFactor = 0.74;
+      } else if (i === 2 || i === 4) {
+        scaleFactor = 0.76;
+      } else {
+        scaleFactor = 0.8; // for i=3, the center
+      }
+  
       positions.push({
         left: `${x}%`,
         top: `${y}%`,
         scale: scaleFactor,
       });
     }
-
+  
     return positions;
   };
 
