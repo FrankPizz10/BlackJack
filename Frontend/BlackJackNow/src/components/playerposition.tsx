@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-
 
 interface BettingCircleProps {
   mainBet: number;
@@ -43,10 +42,10 @@ const BettingCircle: React.FC<BettingCircleProps> = ({
 
   const getHighlightColor = (section: string) => {
     if (hasBet(section)) {
-      return "#4ade80"; // Green for sections with bets
+      return '#4ade80'; // Green for sections with bets
     }
     if (section === selectedSection) {
-      return "#4ade80"; // Green for selected section
+      return '#4ade80'; // Green for selected section
     }
     return hoveredSection === section ? '#334155' : '#1e293b';
   };
@@ -95,31 +94,35 @@ const BettingCircle: React.FC<BettingCircleProps> = ({
           cx={centerX}
           cy={centerY}
           r={mainRadius}
-          fill={getHighlightColor("center")}
+          fill={getHighlightColor('center')}
           stroke="#475569"
           strokeWidth="2"
-          style={{ cursor: isSectionClickable("center") ? 'pointer' : 'not-allowed' }}
-          onMouseEnter={() => isSectionClickable("center") && setHoveredSection("center")}
+          style={{
+            cursor: isSectionClickable('center') ? 'pointer' : 'not-allowed',
+          }}
+          onMouseEnter={() =>
+            isSectionClickable('center') && setHoveredSection('center')
+          }
           onMouseLeave={() => setHoveredSection(null)}
-          onClick={() => handleClick("center")}
-          whileHover={isSectionClickable("center") ? { scale: 1.05 } : {}}
-          whileTap={isSectionClickable("center") ? { scale: 0.95 } : {}}
+          onClick={() => handleClick('center')}
+          whileHover={isSectionClickable('center') ? { scale: 1.05 } : {}}
+          whileTap={isSectionClickable('center') ? { scale: 0.95 } : {}}
         />
 
-      <text
-        key={`mainBet-${mainBet}`} // Add key to force re-render
-        x={centerX}
-        y={centerY + 5}
-        textAnchor="middle"
-        style={{ 
-          fill: 'white', 
-          fontSize: mainBet >= 1000 ? '0.875rem' : '1rem', 
-          fontWeight: 'bold',
-          pointerEvents: 'none'
-        }}
-      >
-        {formatBetAmount(mainBet)}
-      </text>
+        <text
+          key={`mainBet-${mainBet}`} // Add key to force re-render
+          x={centerX}
+          y={centerY + 5}
+          textAnchor="middle"
+          style={{
+            fill: 'white',
+            fontSize: mainBet >= 1000 ? '0.875rem' : '1rem',
+            fontWeight: 'bold',
+            pointerEvents: 'none',
+          }}
+        >
+          {formatBetAmount(mainBet)}
+        </text>
 
         {/* Side bet circles */}
         {Object.entries(sideBetPositions).map(([section, pos]) => (
@@ -131,8 +134,12 @@ const BettingCircle: React.FC<BettingCircleProps> = ({
               fill={getHighlightColor(section)}
               stroke="#475569"
               strokeWidth="2"
-              style={{ cursor: isSectionClickable(section) ? 'pointer' : 'not-allowed' }}
-              onMouseEnter={() => isSectionClickable(section) && setHoveredSection(section)}
+              style={{
+                cursor: isSectionClickable(section) ? 'pointer' : 'not-allowed',
+              }}
+              onMouseEnter={() =>
+                isSectionClickable(section) && setHoveredSection(section)
+              }
               onMouseLeave={() => setHoveredSection(null)}
               onClick={() => handleClick(section)}
               whileHover={isSectionClickable(section) ? { scale: 1.05 } : {}}
@@ -143,10 +150,10 @@ const BettingCircle: React.FC<BettingCircleProps> = ({
               x={pos.x}
               y={pos.y + 4}
               textAnchor="middle"
-              style={{ 
-                fill: 'white', 
+              style={{
+                fill: 'white',
                 fontSize: '0.875rem',
-                pointerEvents: 'none'
+                pointerEvents: 'none',
               }}
             >
               {formatBetAmount(sideBets[section] || 0)}
@@ -234,7 +241,7 @@ interface PlayerPositionProps {
   isActive?: boolean;
   onSectionClick?: (section: string) => void;
   selectedSection?: string | null;
-  onBetPlaced?: (section: string, amount: number) => void;  // New prop for handling bet placement
+  onBetPlaced?: (section: string, amount: number) => void; // New prop for handling bet placement
 }
 
 const PlayerPosition: React.FC<PlayerPositionProps> = ({
