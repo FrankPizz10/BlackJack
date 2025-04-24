@@ -6,20 +6,23 @@ import { GameState } from '@shared-types/Game/GameState';
 import { useEffect } from 'react';
 import { useSocket } from './useSocket';
 
+// Type that holds the state of the game for display purposes
 export type DisplayGameState = {
-  gameData: GameState | null;
-  startBetting: boolean;
-  betAmount: number;
+  gameData: GameState | null; // The current state of the game (e.g., cards, players)
+  startBetting: boolean; // Whether players can place bets
+  betAmount: number; // Current bet amount
 };
 
+// Type that holds the state of the room and user for display purposes
 export type DisplayRoomState = {
-  room: RoomData | null;
-  userRoom: UserRoom | null;
-  userSeats: UserSeat[] | null;
-  userSeat: UserSeat | null;
-  joinRoom: JoinRoom | null;
+  room: RoomData | null; // Information about the current game room
+  userRoom: UserRoom | null; // Info about the current user's room assignment
+  userSeats: UserSeat[] | null; // All seats in the room
+  userSeat: UserSeat | null; // Seat assigned to this user
+  joinRoom: JoinRoom | null; // Data used when the user is joining a room
 };
 
+// Hook that sets up WebSocket listeners for game-related events
 export const useGameSocketListeners = ({
   setRoomState,
   setGameState,
@@ -27,14 +30,14 @@ export const useGameSocketListeners = ({
   setRoomState: React.Dispatch<React.SetStateAction<DisplayRoomState>>;
   setGameState: React.Dispatch<React.SetStateAction<DisplayGameState>>;
 }) => {
-  // Define the socket
+  // Get the socket instance from the custom hook
   const { socket } = useSocket();
 
   useEffect(() => {
-    // Check if socket is available
+    // Exit early if socket is not ready
     if (!socket) return;
 
-    // Define the event handlers
+    // Listener: when a room is created, update the room state
     const onRoomCreated = (data: StartGame) => {
       setRoomState((prev) => ({
         ...prev,
@@ -45,14 +48,20 @@ export const useGameSocketListeners = ({
       console.log('Room created: ', data);
     };
 
+    // Listener: when a user joins a room, update the full room state including users and seats
     const onRoomJoined = (data: RoomWithUsersAndSeats) => {
       const { UserRooms } = data;
+
+      // Find the current user's room info using their socket ID
       const userRoomDb = UserRooms.find((ur) => ur.name === socket.id);
       const userSeats = data.UserRooms.flatMap((ur) => ur.UserSeats);
+
       if (!userRoomDb) {
         console.error('User room not found in roomJoined event');
         return;
       }
+
+      // Update state with room and user information
       setRoomState((prev) => ({
         ...prev,
         room: {
@@ -75,10 +84,14 @@ export const useGameSocketListeners = ({
       }));
     };
 
+    // Register all socket event listeners
     socket.on('roomCreated', onRoomCreated);
     socket.on('roomJoined', onRoomJoined);
+
+    // Listener: triggered when a seat is taken
     socket.on('seatTaken', (data: UserSeat) => {
       setRoomState((prev) => {
+        // Only update if the taken seat is the current user's
         if (data.userRoomId === prev.userRoom?.id) {
           return {
             ...prev,
@@ -89,20 +102,28 @@ export const useGameSocketListeners = ({
         return prev;
       });
     });
+
+    // Listener: game has started, enable betting
     socket.on('gameStarted', () =>
       setGameState((prev) => ({ ...prev, startBetting: true }))
     );
+
+    // Listener: all bets placed, stop betting
     socket.on('betsPlaced', () =>
       setGameState((prev) => ({ ...prev, startBetting: false }))
     );
+
+    // Listener: game has been reset, allow betting again
     socket.on('gameReset', () =>
       setGameState((prev) => ({ ...prev, startBetting: true }))
     );
+
+    // Listener: update the current game state
     socket.on('gameState', (gs: GameState) =>
       setGameState((prev) => ({ ...prev, gameData: gs }))
     );
 
-    // Cleanup function to remove the event listeners
+    // Cleanup all listeners on component unmount or socket change
     return () => {
       socket.off('roomCreated', onRoomCreated);
       socket.off('roomJoined', onRoomJoined);
