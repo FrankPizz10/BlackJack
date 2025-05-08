@@ -5,7 +5,7 @@ import { roomsCreateSchema, getRoomsSchema } from '@shared-types/db/Room';
 import { ZodError } from 'zod';
 
 export const getRoomsController = (context: AppContext) => {
-  return async (req: Request, res: Response) => {
+  return async (req: Request, res: Response): Promise<void> => {
     try {
       const { roomsDb, roomsCache: roomsCacheString } = await getRooms(context);
       const roomsCache = roomsCacheString ? JSON.parse(roomsCacheString) : null;
