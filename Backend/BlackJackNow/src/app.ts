@@ -28,6 +28,7 @@ const context = createContext();
 
 app.use(rootRouter);
 app.use('/api/rooms', roomsRouter(context));
+app.use('/api/gameTable', roomsRouter(context));
 
 const turnQueue = new Queue('turnQueue', { connection: context.redis });
 
