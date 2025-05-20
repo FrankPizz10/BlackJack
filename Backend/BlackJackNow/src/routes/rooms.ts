@@ -60,7 +60,7 @@ const roomsRouter = (context: AppContext): Router => {
    *                   type: string
    *                   example: "Rooms"
    *       400:
-   *         description: Inavlid request
+   *         description: Invalid request
    *         content:
    *           application/json:
    *             schema:
