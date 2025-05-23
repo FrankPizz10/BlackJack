@@ -668,6 +668,7 @@ const loadPlayers = (userRooms: UserRoomWithSeat[]): Player[] => {
   );
   return userRooms.map((userRoom, index) => ({
     userId: userRoom.userId,
+    userName: userRoom.name,
     stack: userRoom.initialStack,
     userRoomDbId: userRoom.id,
     isAfk: false,

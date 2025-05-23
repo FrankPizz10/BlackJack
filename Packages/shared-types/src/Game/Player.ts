@@ -9,6 +9,7 @@
  * */
 export type Player = Readonly<{
   userId: number;
+  userName: string;
   stack: number;
   userRoomDbId: number;
   isAfk: boolean;

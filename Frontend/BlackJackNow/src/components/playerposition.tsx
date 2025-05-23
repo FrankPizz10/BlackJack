@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Card } from '@shared-types/Game/Card';
 
 interface BettingCircleProps {
   mainBet: number;
@@ -165,13 +166,13 @@ const BettingCircle: React.FC<BettingCircleProps> = ({
   );
 };
 
-type Card = {
+export type BoardCard = {
   image: string;
-  value: string;
+  card: Card;
 };
 
 interface PlayerCardsProps {
-  cards: Card[];
+  cards: BoardCard[];
   count: number;
 }
 
@@ -207,7 +208,7 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({ cards, count }) => {
           >
             <img
               src={card.image}
-              alt={card.value}
+              alt={card.card.value}
               style={{ width: '100%', height: '100%', objectFit: 'contain' }}
             />
           </motion.div>
@@ -236,7 +237,7 @@ interface PlayerPositionProps {
   username?: string;
   mainBet?: number;
   sideBets?: { [key: string]: number };
-  cards?: Card[];
+  cards?: BoardCard[];
   count?: number;
   isActive?: boolean;
   onSectionClick?: (section: string) => void;
@@ -301,3 +302,4 @@ const PlayerPosition: React.FC<PlayerPositionProps> = ({
 };
 
 export default PlayerPosition;
+

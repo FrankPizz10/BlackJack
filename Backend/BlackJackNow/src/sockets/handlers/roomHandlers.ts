@@ -167,6 +167,7 @@ export const handleTakeSeat = async (
     const player: Player = {
       userId: user.id,
       stack: 100,
+      userName: user.uid,
       userRoomDbId: roomInfo.UserRooms.find((ur) => ur.userId === user.id)!.id,
       isAfk: false,
       seatIndexes: [seat.position - 1],
