@@ -120,7 +120,8 @@ export const takeSeat = (socket: Socket, roomState: DisplayRoomState) => {
   if (!roomState.room || !roomState.userRoom) return; // Ensure valid state before proceeding
 
   // Determine next seat position (1-based index)
-  const seatPosition = roomState.userSeats ? roomState.userSeats.length + 1 : 1;
+  // const seatPosition = roomState.userSeats ? roomState.userSeats.length + 1 : 1;
+  const seatPosition = roomState.userSeats?.length ?? 0;
 
   const takeSeat: TakeSeat = {
     roomUrl: roomState.room.url,

@@ -44,6 +44,7 @@ export const useGameSocketListeners = ({
         room: data.roomDb,
         userRoom: data.userRoomDb,
         userSeat: data.userSeatDb,
+        userSeats: [...(prev.userSeats ?? []), data.userSeatDb],
       }));
       console.log('Room created: ', data);
     };
@@ -104,9 +105,10 @@ export const useGameSocketListeners = ({
     });
 
     // Listener: game has started, enable betting
-    socket.on('gameStarted', () =>
-      setGameState((prev) => ({ ...prev, startBetting: true }))
-    );
+    socket.on('gameStarted', () => {
+      console.log('Game started');
+      setGameState((prev) => ({ ...prev, startBetting: true }));
+    });
 
     // Listener: all bets placed, stop betting
     socket.on('betsPlaced', () =>
@@ -119,9 +121,10 @@ export const useGameSocketListeners = ({
     );
 
     // Listener: update the current game state
-    socket.on('gameState', (gs: GameState) =>
-      setGameState((prev) => ({ ...prev, gameData: gs }))
-    );
+    socket.on('gameState', (gs: GameState) => {
+      console.log('Game state updated: ', gs);
+      setGameState((prev) => ({ ...prev, gameData: gs }));
+    });
 
     // Cleanup all listeners on component unmount or socket change
     return () => {

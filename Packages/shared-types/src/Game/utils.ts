@@ -27,3 +27,31 @@ export const isCardsDealt = (gameState: GameState | null) => {
   if (!gameState) return false;
   return gameState.seats.some((seat) => seat.hands[0].cards.length > 0);
 };
+
+export const getBetAmount = (
+  gameState: GameState | null,
+  seat: UserSeat | null,
+  handIndex: number
+): number => {
+  if (!gameState) return 0;
+  const seatIndex = positionHelper(seat);
+  const hand = gameState.seats[seatIndex].hands[handIndex];
+  return hand ? hand.bet : 0;
+};
+
+export const getStackSize = (
+  gameState: GameState | null,
+  seat: UserSeat | null
+): number => {
+  if (!gameState || !seat) return 0;
+  const seatIndex = positionHelper(seat);
+  return gameState.players[seatIndex].stack;
+};
+
+export const createTempUserSeats = (numSeats: number): UserSeat[] => {
+  return Array.from({ length: numSeats + 1 }, (_, index) => ({
+    id: index,
+    position: index + 1,
+    userRoomId: 1,
+  }));
+};

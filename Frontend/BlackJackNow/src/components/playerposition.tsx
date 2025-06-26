@@ -257,6 +257,7 @@ const PlayerPosition: React.FC<PlayerPositionProps> = ({
 }) => {
   const handleSectionClick = (section: string) => {
     if (onSectionClick) {
+      console.log(`Section clicked: ${section}`);
       onSectionClick(section);
     }
   };
