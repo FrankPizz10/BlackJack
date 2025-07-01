@@ -53,10 +53,10 @@ const BlackjackTable = () => {
   const handlePlayerClick = (seat: UserSeat) => {
     if (!roomState.userSeat || roomState.userSeat.id !== seat.id) {
       setSeatToJoin(seat);
+    } else {
+      // setSelectedSeat((prev) => (prev?.id === seat.id ? null : seat));
+      setSelectedSeat(seat);
     }
-    // } else {
-    //   setSelectedSeat((prev) => (prev?.id === seat.id ? null : seat));
-    // }
     console.log('Player clicked:', seat);
   };
 
@@ -151,7 +151,7 @@ const BlackjackTable = () => {
   };
 
   const positions = getPlayerPositions();
-  const userSeats = roomState.userSeats ?? [];
+  const userSeats = roomState.userSeats ?? Array(7).fill(null);
 
   return (
     <div>
@@ -165,7 +165,7 @@ const BlackjackTable = () => {
 
         return (
           <div
-            key={seat.id}
+            key={seat?.id ?? `empty-${index}`}
             style={{
               position: 'absolute',
               left: positions[index].left,
@@ -180,7 +180,7 @@ const BlackjackTable = () => {
             }}
             onClick={() => handlePlayerClick(seat)}
           >
-            {seat.id ? (
+            {seat ? (
               <PlayerPosition
                 // username={seat.username}
                 mainBet={getBetAmount(gameState.gameData, seat, 0)}

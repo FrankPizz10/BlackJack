@@ -59,7 +59,7 @@ const ActionCard: React.FC<ActionCardProps> = ({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               disabled={!canDouble}
-              onClick={() => onAction('double')}
+              onClick={() => onAction('Double Down')}
               style={{
                 ...buttonBaseStyle,
                 gridColumn: 'span 1 / span 1',
@@ -83,7 +83,7 @@ const ActionCard: React.FC<ActionCardProps> = ({
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => onAction('hit')}
+              onClick={() => onAction('Hit')}
               style={{
                 ...buttonBaseStyle,
                 gridColumn: 'span 2 / span 2',
@@ -105,7 +105,7 @@ const ActionCard: React.FC<ActionCardProps> = ({
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => onAction('stand')}
+              onClick={() => onAction('Stand')}
               style={{
                 ...buttonBaseStyle,
                 gridColumn: 'span 2 / span 2',
@@ -156,7 +156,7 @@ const ActionCard: React.FC<ActionCardProps> = ({
                 exit={{ opacity: 0 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => onAction('split')}
+                onClick={() => onAction('Split')}
                 style={{
                   ...buttonBaseStyle,
                   gridColumn: 'span 1 / span 1',

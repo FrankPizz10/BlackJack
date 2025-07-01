@@ -39,12 +39,14 @@ export const useGameSocketListeners = ({
 
     // Listener: when a room is created, update the room state
     const onRoomCreated = (data: StartGame) => {
+      const filledSeats = Array(7).fill(null);
+      filledSeats[data.userSeatDb.position] = data.userSeatDb;
       setRoomState((prev) => ({
         ...prev,
         room: data.roomDb,
         userRoom: data.userRoomDb,
         userSeat: data.userSeatDb,
-        userSeats: [...(prev.userSeats ?? []), data.userSeatDb],
+        userSeats: filledSeats,
       }));
       console.log('Room created: ', data);
     };
@@ -111,9 +113,10 @@ export const useGameSocketListeners = ({
     });
 
     // Listener: all bets placed, stop betting
-    socket.on('betsPlaced', () =>
-      setGameState((prev) => ({ ...prev, startBetting: false }))
-    );
+    socket.on('betsPlaced', () => {
+      console.log('All bets placed, stopping betting phase');
+      setGameState((prev) => ({ ...prev, startBetting: false }));
+    });
 
     // Listener: game has been reset, allow betting again
     socket.on('gameReset', () =>
