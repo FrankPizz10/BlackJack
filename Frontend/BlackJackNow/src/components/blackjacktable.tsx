@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import PlayerPosition from './playerposition';
+import PlayerPosition, { PlayerCards } from './playerposition';
 import SidebarMenu from './sidebarmenu';
 import BlackjackControls from './actioncard';
 import {
@@ -13,6 +13,7 @@ import {
   getStackSize,
   isCardsDealt,
   createTempUserSeats,
+  getDealerCards,
 } from '@shared-types/Game/utils';
 import { computeHandCount } from '@shared-types/Game/Hand';
 import {
@@ -152,9 +153,17 @@ const BlackjackTable = () => {
 
   const positions = getPlayerPositions();
   const userSeats = roomState.userSeats ?? Array(7).fill(null);
+  const dealerCards = gameState.gameData
+    ? getDealerCards(gameState.gameData)
+    : [];
+  const dealerCount = computeHandCount(dealerCards);
+  const dealerBoardCards = convertCardsToBoardCards(dealerCards);
 
   return (
     <div>
+      {isCardsDealt(gameState.gameData) && (
+        <PlayerCards cards={dealerBoardCards} count={dealerCount} />
+      )}
       {userSeats.slice(0, 7).map((seat, index) => {
         const cards = gameState.gameData
           ? getCards(gameState.gameData, seat)[0]

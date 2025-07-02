@@ -40,7 +40,7 @@ export const useGameSocketListeners = ({
     // Listener: when a room is created, update the room state
     const onRoomCreated = (data: StartGame) => {
       const filledSeats = Array(7).fill(null);
-      filledSeats[data.userSeatDb.position] = data.userSeatDb;
+      filledSeats[data.userSeatDb.position - 1] = data.userSeatDb;
       setRoomState((prev) => ({
         ...prev,
         room: data.roomDb,

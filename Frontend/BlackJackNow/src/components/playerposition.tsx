@@ -176,7 +176,7 @@ interface PlayerCardsProps {
   count: number;
 }
 
-const PlayerCards: React.FC<PlayerCardsProps> = ({ cards, count }) => {
+export const PlayerCards: React.FC<PlayerCardsProps> = ({ cards, count }) => {
   return (
     <div
       style={{
