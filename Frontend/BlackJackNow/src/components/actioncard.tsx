@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BettingCard from './bettingcard';
+import { GamePhase } from '../utils/gameAction';
+import { UserSeat } from '@shared-types/db/UserSeat';
 
 interface ActionCardProps {
   onAction: (action: string) => void;
@@ -10,6 +12,13 @@ interface ActionCardProps {
   isVisible: boolean;
 }
 
+const buttonBaseStyle = {
+  color: 'white',
+  fontWeight: 500,
+  borderRadius: '0.5rem',
+  transition: 'background-color 0.2s',
+};
+
 const ActionCard: React.FC<ActionCardProps> = ({
   onAction,
   canDouble = true,
@@ -17,13 +26,6 @@ const ActionCard: React.FC<ActionCardProps> = ({
   canSurrender = true,
   isVisible,
 }) => {
-  const buttonBaseStyle = {
-    color: 'white',
-    fontWeight: 500,
-    borderRadius: '0.5rem',
-    transition: 'background-color 0.2s',
-  };
-
   const disabledButtonStyle = {
     opacity: 0.5,
     cursor: 'not-allowed',
@@ -181,10 +183,11 @@ const ActionCard: React.FC<ActionCardProps> = ({
 };
 
 interface BlackjackControlsProps {
+  selectedSeat: UserSeat | null;
   playerStack: number;
   onBetSubmit: (amount: number) => void;
   onAction: (action: string) => void;
-  gamePhase?: 'betting' | 'action';
+  gamePhase?: GamePhase;
   canDouble: boolean;
   canSplit: boolean;
   canSurrender: boolean;
@@ -192,10 +195,11 @@ interface BlackjackControlsProps {
 
 // Container component to manage the transition between betting and actions
 const BlackjackControls: React.FC<BlackjackControlsProps> = ({
+  selectedSeat,
   playerStack,
   onBetSubmit,
   onAction,
-  gamePhase = 'betting', // 'betting' or 'action'
+  gamePhase = GamePhase.Betting,
   canDouble,
   canSplit,
   canSurrender,
@@ -203,39 +207,110 @@ const BlackjackControls: React.FC<BlackjackControlsProps> = ({
   const [previousPhase, setPreviousPhase] = useState(gamePhase);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  console.log({ gamePhase, selectedSeat, isTransitioning });
+
   useEffect(() => {
     if (gamePhase !== previousPhase) {
       setIsTransitioning(true);
       setPreviousPhase(gamePhase);
 
-      // Allow time for exit animation
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         setIsTransitioning(false);
       }, 300);
+
+      return () => clearTimeout(timeout);
     }
   }, [gamePhase, previousPhase]);
 
+  const renderPhaseComponent = () => {
+    if (!selectedSeat) return null;
+
+    switch (gamePhase) {
+      case GamePhase.Betting:
+        return (
+          <motion.div
+            key="betting"
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -50, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          >
+            <BettingCard
+              playerStack={playerStack}
+              onBetSubmit={(amount) => {
+                setIsTransitioning(true);
+                onBetSubmit(amount);
+              }}
+            />
+          </motion.div>
+        );
+      case GamePhase.Action:
+        return (
+          <motion.div
+            key="action"
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -50, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          >
+            <ActionCard
+              isVisible={true}
+              onAction={onAction}
+              canDouble={canDouble}
+              canSplit={canSplit}
+              canSurrender={canSurrender}
+            />
+          </motion.div>
+        );
+      case GamePhase.RoundOver:
+        return (
+          <motion.div
+            key="roundover"
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -50, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            style={{ textAlign: 'center', padding: '1rem', color: '#fff' }}
+          >
+            <h2>Round Over</h2>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onAction('Reset')}
+              style={{
+                ...buttonBaseStyle,
+                backgroundColor: '#475569',
+                padding: '0.75rem 0',
+                fontSize: '1.125rem',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = '#64748b';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = '#475569';
+              }}
+            >
+              RESET
+            </motion.button>
+          </motion.div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div style={{ position: 'relative' }}>
-      <AnimatePresence mode="wait">
-        {gamePhase === 'betting' && !isTransitioning ? (
-          <BettingCard
-            playerStack={playerStack}
-            onBetSubmit={(amount) => {
-              setIsTransitioning(true);
-              onBetSubmit(amount);
-            }}
-          />
-        ) : (
-          <ActionCard
-            isVisible={!isTransitioning}
-            onAction={onAction}
-            canDouble={canDouble}
-            canSplit={canSplit}
-            canSurrender={canSurrender}
-          />
-        )}
-      </AnimatePresence>
+    <div
+      style={{
+        position: 'absolute',
+        bottom: '5%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '80%',
+        zIndex: 20,
+      }}
+    >
+      <AnimatePresence mode="wait">{renderPhaseComponent()}</AnimatePresence>
     </div>
   );
 };

@@ -22,6 +22,7 @@ import {
   handleBetAmount,
   createRoom,
   startGame,
+  getGamePhase,
 } from '../utils/gameAction';
 import { ActionType } from '@shared-types/Game/ActionType';
 import { UserSeat } from '@shared-types/db/UserSeat';
@@ -54,11 +55,13 @@ const BlackjackTable = () => {
   const handlePlayerClick = (seat: UserSeat) => {
     if (!roomState.userSeat || roomState.userSeat.id !== seat.id) {
       setSeatToJoin(seat);
-    } else {
-      // setSelectedSeat((prev) => (prev?.id === seat.id ? null : seat));
+    } else if (selectedSeat?.id === seat.id) {
+      console.log(`Deselecting seat: ${seat.id}`);
+      setSelectedSeat(null);
+    } else if (seat.id === roomState.userSeat.id) {
+      console.log(`Selecting seat: ${seat.id}`);
       setSelectedSeat(seat);
     }
-    console.log('Player clicked:', seat);
   };
 
   const handleSectionClick = (seat: UserSeat, section: string) => {
@@ -109,7 +112,6 @@ const BlackjackTable = () => {
         setGameState
       );
     }
-    setSelectedSeat(null);
   };
 
   const handleAction = (actionType: string) => {
@@ -122,10 +124,6 @@ const BlackjackTable = () => {
       gameState.betAmount,
       setGameState
     );
-
-    if (actionType === 'Stand' || actionType === 'Surrender') {
-      setTimeout(() => setSelectedSeat(null), 1000);
-    }
   };
 
   const isPlayerActive = (seat: UserSeat) => roomState.userSeat?.id === seat.id;
@@ -230,28 +228,16 @@ const BlackjackTable = () => {
         />
       </div>
 
-      {selectedSeat && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '5%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '80%',
-            zIndex: 20,
-          }}
-        >
-          <BlackjackControls
-            playerStack={getStackSize(gameState.gameData, selectedSeat)}
-            onBetSubmit={handleBetSubmit}
-            onAction={handleAction}
-            gamePhase={gameState.startBetting ? 'betting' : 'action'}
-            canDouble={true}
-            canSplit={true}
-            canSurrender={true}
-          />
-        </div>
-      )}
+      <BlackjackControls
+        selectedSeat={selectedSeat}
+        playerStack={getStackSize(gameState.gameData, selectedSeat)}
+        onBetSubmit={handleBetSubmit}
+        onAction={handleAction}
+        gamePhase={getGamePhase(gameState)}
+        canDouble={true}
+        canSplit={true}
+        canSurrender={true}
+      />
 
       {showIntroCard && <IntroCard onClose={handleStartgame} />}
 

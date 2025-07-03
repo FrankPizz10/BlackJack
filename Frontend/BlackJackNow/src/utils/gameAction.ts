@@ -3,7 +3,7 @@ import { ActionEvent, Event } from '@shared-types/Game/Action';
 import { ActionType } from '@shared-types/Game/ActionType';
 import { JoinRoom } from '@shared-types/db/Room';
 import { UserSeat } from '@shared-types/db/UserSeat';
-import { positionHelper } from '@shared-types/Game/utils';
+import { isCardsDealt, positionHelper } from '@shared-types/Game/utils';
 import {
   DisplayGameState,
   DisplayRoomState,
@@ -131,5 +131,26 @@ export const takeSeat = (socket: Socket, roomState: DisplayRoomState) => {
 
   console.log('Taking seat: ', takeSeat);
   socket.emit('takeSeat', takeSeat); // Emit seat request to server
+};
+
+export enum GamePhase {
+  Betting = 'betting',
+  Action = 'action',
+  RoundOver = 'roundOver',
+  Waiting = 'waiting',
+}
+
+export const getGamePhase = (gameState: DisplayGameState): GamePhase => {
+  if (gameState.startBetting) {
+    return GamePhase.Betting;
+  } else if (
+    isCardsDealt(gameState.gameData) &&
+    !gameState?.gameData?.roundOver
+  ) {
+    return GamePhase.Action;
+  } else if (gameState?.gameData?.roundOver) {
+    return GamePhase.RoundOver;
+  }
+  return GamePhase.Waiting;
 };
 
