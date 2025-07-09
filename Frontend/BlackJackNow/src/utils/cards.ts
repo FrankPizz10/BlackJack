@@ -16,6 +16,6 @@ export const convertCardsToBoardCards = (
 export const getImage = (card: Card): string => {
   const suit = card.suit.toLowerCase();
   const value = card.value.toLowerCase();
-  return `/cards/${value}_of_${suit}.png`;
+  return `/cards/${suit}_${value}.png`;
 };
 
