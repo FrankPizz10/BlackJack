@@ -1,6 +1,7 @@
 import { UserSeat } from '../db/UserSeat';
 import { GameState } from './GameState';
 import { Card } from './Card';
+import { Hand } from './Hand';
 
 export const positionHelper = (seat: UserSeat | null) => {
   return seat && seat.position ? seat.position - 1 : 0;
@@ -15,17 +16,43 @@ export const getCards = (
   );
 };
 
-export const getHands = (gameState: GameState, position: UserSeat) => {
+export const getHands = (
+  gameState: GameState | null,
+  position: UserSeat | null
+) => {
+  if (!gameState || !position) return [];
   return gameState.seats[positionHelper(position)].hands;
 };
 
-export const getDealerCards = (gameState: GameState) => {
-  return gameState.dealerHand;
+export const getDealerCards = (gameState: GameState | null) => {
+  return gameState?.dealerHand ?? [];
 };
 
 export const isCardsDealt = (gameState: GameState | null) => {
   if (!gameState) return false;
   return gameState.seats.some((seat) => seat.hands[0].cards.length > 0);
+};
+
+export const getHandOutcome = (
+  hand: Hand | null,
+  gameState: GameState | null
+) => {
+  if (hand?.isBlackjack) {
+    return 'Blackjack';
+  }
+  if (!gameState || !gameState.roundOver) {
+    return null;
+  }
+  if (hand?.isDone && hand?.isWon) {
+    return 'Won';
+  }
+  if (hand?.isDone && !hand?.isWon && !hand?.isPush) {
+    return 'Lost';
+  }
+  if (hand?.isDone && hand?.isPush) {
+    return 'Push';
+  }
+  return null;
 };
 
 export const getBetAmount = (

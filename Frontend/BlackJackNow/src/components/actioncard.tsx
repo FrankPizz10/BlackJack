@@ -19,6 +19,18 @@ const buttonBaseStyle = {
   transition: 'background-color 0.2s',
 };
 
+interface HandOutcomeProps {
+  outcome: string;
+}
+
+const HandOutcome: React.FC<HandOutcomeProps> = ({ outcome }) => {
+  return (
+    <div style={{ color: 'white', fontSize: '1.25rem', marginTop: '1rem' }}>
+      <p>{`Hand Outcome: ${outcome}`}</p>
+    </div>
+  );
+};
+
 const ActionCard: React.FC<ActionCardProps> = ({
   onAction,
   canDouble = true,
@@ -185,6 +197,7 @@ const ActionCard: React.FC<ActionCardProps> = ({
 interface BlackjackControlsProps {
   selectedSeat: UserSeat | null;
   playerStack: number;
+  handOutcome: string | null;
   onBetSubmit: (amount: number) => void;
   onAction: (action: string) => void;
   gamePhase?: GamePhase;
@@ -197,6 +210,7 @@ interface BlackjackControlsProps {
 const BlackjackControls: React.FC<BlackjackControlsProps> = ({
   selectedSeat,
   playerStack,
+  handOutcome,
   onBetSubmit,
   onAction,
   gamePhase = GamePhase.Betting,
@@ -273,6 +287,7 @@ const BlackjackControls: React.FC<BlackjackControlsProps> = ({
             style={{ textAlign: 'center', padding: '1rem', color: '#fff' }}
           >
             <h2>Round Over</h2>
+            {handOutcome && <HandOutcome outcome={handOutcome} />}
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}

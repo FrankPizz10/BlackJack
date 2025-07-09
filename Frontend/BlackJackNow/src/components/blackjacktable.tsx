@@ -14,6 +14,8 @@ import {
   isCardsDealt,
   createTempUserSeats,
   getDealerCards,
+  getHands,
+  getHandOutcome,
 } from '@shared-types/Game/utils';
 import { computeHandCount } from '@shared-types/Game/Hand';
 import {
@@ -231,6 +233,10 @@ const BlackjackTable = () => {
       <BlackjackControls
         selectedSeat={selectedSeat}
         playerStack={getStackSize(gameState.gameData, selectedSeat)}
+        handOutcome={getHandOutcome(
+          getHands(gameState?.gameData, roomState?.userSeat)[0],
+          gameState?.gameData
+        )}
         onBetSubmit={handleBetSubmit}
         onAction={handleAction}
         gamePhase={getGamePhase(gameState)}
